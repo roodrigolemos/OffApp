@@ -21,7 +21,7 @@ struct AppView: View {
                 TabBarView()
             },
             onboardingView: {
-                WelcomeView()
+                OnboardingView()
             }
         )
         .environment(appState)
