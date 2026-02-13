@@ -93,7 +93,7 @@ private extension PlanPresetsView {
     }
 }
 
-// MARK: - Views
+// MARK: - Helper Views
 
 private extension PlanPresetsView {
 

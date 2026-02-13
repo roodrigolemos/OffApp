@@ -132,7 +132,7 @@ private extension PlanAppsView {
 
 }
 
-// MARK: - Views
+// MARK: - Helper Views
 
 private extension PlanAppsView {
 

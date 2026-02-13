@@ -120,7 +120,7 @@ private extension ReviewRequestView {
     }
 }
 
-// MARK: - Views
+// MARK: - Helper Views
 private extension ReviewRequestView {
 
     func testimonialCard(quote: String, author: String) -> some View {

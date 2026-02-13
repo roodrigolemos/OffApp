@@ -181,7 +181,7 @@ private extension ExpectedResultsView {
     }
 }
 
-// MARK: - Views
+// MARK: - Helper Views
 private extension ExpectedResultsView {
 
     func resultTile(icon: String, title: String, score: Int, delta: String?, description: String) -> some View {

@@ -114,7 +114,7 @@ private extension SocialImpactView {
     }
 }
 
-// MARK: - Views
+// MARK: - Helper Views
 private extension SocialImpactView {
 
     func impactBullet(_ text: String) -> some View {

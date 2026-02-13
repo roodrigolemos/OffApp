@@ -86,7 +86,7 @@ private extension MirrorStateView {
     }
 }
 
-// MARK: - Views
+// MARK: - Helper Views
 private extension MirrorStateView {
 
     func cardButton(index: Int, image: String, title: String, subtitle: String) -> some View {

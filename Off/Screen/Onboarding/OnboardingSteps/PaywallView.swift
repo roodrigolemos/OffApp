@@ -170,7 +170,7 @@ private extension PaywallView {
     }
 }
 
-// MARK: - Views
+// MARK: - Helper Views
 private extension PaywallView {
 
     func benefitRow(icon: String, title: String, description: String) -> some View {

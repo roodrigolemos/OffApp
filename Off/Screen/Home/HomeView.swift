@@ -19,7 +19,7 @@ struct HomeView: View {
                     VStack(spacing: 0) {
                         headerSection
                         checkInPromptCard
-                        // checkInCompletedCard
+//                         checkInCompletedCard
                         insightsGrid
                         weekProgressSection
                     }
@@ -39,17 +39,20 @@ struct HomeView: View {
             }
         }
     }
+}
 
-    // MARK: - Header
+// MARK: - Sections
 
-    private var headerSection: some View {
+private extension HomeView {
+
+    var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("WEDNESDAY, FEB 11")
+            Text(formattedDate)
                 .font(.system(size: 12, weight: .heavy))
                 .foregroundStyle(Color.offTextMuted)
                 .tracking(1.6)
 
-            Text("Good evening")
+            Text(greeting)
                 .font(.system(size: 38, weight: .heavy))
                 .foregroundStyle(Color.offTextPrimary)
                 .tracking(-0.5)
@@ -60,9 +63,7 @@ struct HomeView: View {
         .padding(.bottom, 36)
     }
 
-    // MARK: - Check-in Prompt Card
-
-    private var checkInPromptCard: some View {
+    var checkInPromptCard: some View {
         Button { } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: 32, style: .continuous)
@@ -134,9 +135,7 @@ struct HomeView: View {
         .padding(.bottom, 32)
     }
 
-    // MARK: - Check-in Completed Card (alternative)
-
-    private var checkInCompletedCard: some View {
+    var checkInCompletedCard: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 32, style: .continuous)
                 .fill(
@@ -205,9 +204,7 @@ struct HomeView: View {
         .padding(.bottom, 32)
     }
 
-    // MARK: - Insights Grid
-
-    private var insightsGrid: some View {
+    var insightsGrid: some View {
         VStack(spacing: 18) {
             HStack(spacing: 18) {
                 streakCard
@@ -222,9 +219,71 @@ struct HomeView: View {
         .padding(.bottom, 36)
     }
 
-    // MARK: - Streak Card
+    var weekProgressSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("THIS WEEK")
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundStyle(Color.offTextMuted)
+                .tracking(1.6)
+                .padding(.horizontal, 24)
 
-    private var streakCard: some View {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    dayCard(
+                        day: "MON", date: "3", isToday: false, hasCheckIn: true,
+                        attributes: [
+                            ("brain.head.profile", "arrow.up", Color.offAccent),
+                            ("scope", "arrow.up", Color.offAccent),
+                            ("bolt.fill", "equal", Color.offTextMuted),
+                            ("flag.checkered", "arrow.up", Color.offAccent),
+                            ("hand.raised.slash.fill", "arrow.up", Color.offAccent),
+                            ("hourglass", "equal", Color.offTextMuted)
+                        ],
+                        urgeText: "Noticeable"
+                    )
+                    dayCard(
+                        day: "TUE", date: "4", isToday: false, hasCheckIn: true,
+                        attributes: [
+                            ("brain.head.profile", "equal", Color.offTextMuted),
+                            ("scope", "arrow.down", Color.offWarn),
+                            ("bolt.fill", "arrow.up", Color.offAccent),
+                            ("flag.checkered", "equal", Color.offTextMuted),
+                            ("hand.raised.slash.fill", "equal", Color.offTextMuted),
+                            ("hourglass", "arrow.up", Color.offAccent)
+                        ],
+                        urgeText: "None"
+                    )
+                    dayCard(
+                        day: "WED", date: "5", isToday: false, hasCheckIn: true,
+                        attributes: [
+                            ("brain.head.profile", "arrow.up", Color.offAccent),
+                            ("scope", "arrow.up", Color.offAccent),
+                            ("bolt.fill", "arrow.up", Color.offAccent),
+                            ("flag.checkered", "arrow.up", Color.offAccent),
+                            ("hand.raised.slash.fill", "arrow.up", Color.offAccent),
+                            ("hourglass", "arrow.up", Color.offAccent)
+                        ],
+                        urgeText: "None"
+                    )
+                    dayCard(day: "THU", date: "6", isToday: false, hasCheckIn: false, attributes: [], urgeText: nil)
+                    dayCard(day: "FRI", date: "7", isToday: false, hasCheckIn: false, attributes: [], urgeText: nil)
+                    dayCard(day: "SAT", date: "8", isToday: false, hasCheckIn: false, attributes: [], urgeText: nil)
+                    dayCard(
+                        day: "SUN", date: "9", isToday: true, hasCheckIn: false, attributes: [], urgeText: nil
+                    )
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 2)
+            }
+        }
+    }
+}
+
+// MARK: - Helper Views
+
+private extension HomeView {
+
+    var streakCard: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(Color.offBackgroundSecondary)
@@ -292,9 +351,7 @@ struct HomeView: View {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
-    // MARK: - Plan Card
-
-    private var planCard: some View {
+    var planCard: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(
@@ -353,9 +410,7 @@ struct HomeView: View {
         .shadow(color: Color.offAccent.opacity(0.08), radius: 12, x: 0, y: 6)
     }
 
-    // MARK: - This Week Card
-
-    private var thisWeekCard: some View {
+    var thisWeekCard: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(Color.offBackgroundSecondary)
@@ -394,36 +449,7 @@ struct HomeView: View {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
-    private enum DotState { case filled, partial, stroke }
-
-    private func dayDot(label: String, state: DotState) -> some View {
-        VStack(spacing: 6) {
-            Group {
-                switch state {
-                case .filled:
-                    Circle()
-                        .fill(Color.offAccent)
-                        .frame(width: 8, height: 8)
-                case .partial:
-                    Circle()
-                        .fill(Color.offAccent.opacity(0.4))
-                        .frame(width: 8, height: 8)
-                case .stroke:
-                    Circle()
-                        .stroke(Color.offStroke, lineWidth: 1)
-                        .frame(width: 8, height: 8)
-                }
-            }
-
-            Text(label)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(state == .stroke ? Color.offTextMuted : Color.offTextSecondary)
-        }
-    }
-
-    // MARK: - Week Insight Card
-
-    private var weekInsightCard: some View {
+    var weekInsightCard: some View {
         Button { } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -496,70 +522,34 @@ struct HomeView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Week Progress Section
+    enum DotState { case filled, partial, stroke }
 
-    private var weekProgressSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("THIS WEEK")
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(Color.offTextMuted)
-                .tracking(1.6)
-                .padding(.horizontal, 24)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    dayCard(
-                        day: "MON", date: "3", isToday: false, hasCheckIn: true,
-                        attributes: [
-                            ("brain.head.profile", "arrow.up", Color.offAccent),
-                            ("scope", "arrow.up", Color.offAccent),
-                            ("bolt.fill", "equal", Color.offTextMuted),
-                            ("flag.checkered", "arrow.up", Color.offAccent),
-                            ("hand.raised.slash.fill", "arrow.up", Color.offAccent),
-                            ("hourglass", "equal", Color.offTextMuted)
-                        ],
-                        urgeText: "Noticeable"
-                    )
-                    dayCard(
-                        day: "TUE", date: "4", isToday: false, hasCheckIn: true,
-                        attributes: [
-                            ("brain.head.profile", "equal", Color.offTextMuted),
-                            ("scope", "arrow.down", Color.offWarn),
-                            ("bolt.fill", "arrow.up", Color.offAccent),
-                            ("flag.checkered", "equal", Color.offTextMuted),
-                            ("hand.raised.slash.fill", "equal", Color.offTextMuted),
-                            ("hourglass", "arrow.up", Color.offAccent)
-                        ],
-                        urgeText: "None"
-                    )
-                    dayCard(
-                        day: "WED", date: "5", isToday: false, hasCheckIn: true,
-                        attributes: [
-                            ("brain.head.profile", "arrow.up", Color.offAccent),
-                            ("scope", "arrow.up", Color.offAccent),
-                            ("bolt.fill", "arrow.up", Color.offAccent),
-                            ("flag.checkered", "arrow.up", Color.offAccent),
-                            ("hand.raised.slash.fill", "arrow.up", Color.offAccent),
-                            ("hourglass", "arrow.up", Color.offAccent)
-                        ],
-                        urgeText: "None"
-                    )
-                    dayCard(day: "THU", date: "6", isToday: false, hasCheckIn: false, attributes: [], urgeText: nil)
-                    dayCard(day: "FRI", date: "7", isToday: false, hasCheckIn: false, attributes: [], urgeText: nil)
-                    dayCard(day: "SAT", date: "8", isToday: false, hasCheckIn: false, attributes: [], urgeText: nil)
-                    dayCard(
-                        day: "SUN", date: "9", isToday: true, hasCheckIn: false, attributes: [], urgeText: nil
-                    )
+    func dayDot(label: String, state: DotState) -> some View {
+        VStack(spacing: 6) {
+            Group {
+                switch state {
+                case .filled:
+                    Circle()
+                        .fill(Color.offAccent)
+                        .frame(width: 8, height: 8)
+                case .partial:
+                    Circle()
+                        .fill(Color.offAccent.opacity(0.4))
+                        .frame(width: 8, height: 8)
+                case .stroke:
+                    Circle()
+                        .stroke(Color.offStroke, lineWidth: 1)
+                        .frame(width: 8, height: 8)
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 2)
             }
+
+            Text(label)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(state == .stroke ? Color.offTextMuted : Color.offTextSecondary)
         }
     }
 
-    // MARK: - Day Card
-
-    private func dayCard(
+    func dayCard(
         day: String,
         date: String,
         isToday: Bool,
@@ -650,7 +640,7 @@ struct HomeView: View {
         .shadow(color: isToday ? Color.offAccent.opacity(0.08) : Color.black.opacity(0.02), radius: isToday ? 12 : 6, x: 0, y: isToday ? 6 : 3)
     }
 
-    private func attributeItem(icon: String, arrow: String, color: Color) -> some View {
+    func attributeItem(icon: String, arrow: String, color: Color) -> some View {
         HStack(spacing: 3) {
             Image(systemName: icon)
                 .font(.system(size: 10, weight: .semibold))
@@ -659,6 +649,26 @@ struct HomeView: View {
             Image(systemName: arrow)
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(color)
+        }
+    }
+}
+
+// MARK: - Helpers
+
+private extension HomeView {
+
+    var formattedDate: String {
+        Date.now.formatted(
+            .dateTime.weekday(.wide).month(.abbreviated).day()
+        ).uppercased()
+    }
+
+    var greeting: String {
+        let hour = Calendar.current.component(.hour, from: .now)
+        switch hour {
+        case 5..<12: return "Good morning"
+        case 12..<17: return "Good afternoon"
+        default: return "Good evening"
         }
     }
 }

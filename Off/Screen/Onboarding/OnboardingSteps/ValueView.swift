@@ -73,7 +73,7 @@ private extension ValueView {
 
 }
 
-// MARK: - Views
+// MARK: - Helper Views
 private extension ValueView {
 
     func valueRow(_ text: String) -> some View {

@@ -137,7 +137,7 @@ private extension BaselineSnapshotView {
     }
 }
 
-// MARK: - Views
+// MARK: - Helper Views
 
 private extension BaselineSnapshotView {
 

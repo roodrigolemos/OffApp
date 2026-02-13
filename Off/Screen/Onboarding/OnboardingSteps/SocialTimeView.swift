@@ -98,7 +98,7 @@ private extension SocialTimeView {
 
 }
 
-// MARK: - Views
+// MARK: - Helper Views
 private extension SocialTimeView {
 
     func timeOption(_ text: String, isSelected: Bool) -> some View {

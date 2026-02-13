@@ -90,7 +90,7 @@ private extension BaselineAssessmentView {
 
 }
 
-// MARK: - Views
+// MARK: - Helper Views
 private extension BaselineAssessmentView {
 
     func ratingRow(attribute: BaselineAttribute) -> some View {
