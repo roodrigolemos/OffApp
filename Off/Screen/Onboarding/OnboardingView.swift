@@ -28,7 +28,9 @@ enum OnboardingStep {
 struct OnboardingView: View {
 
     @Environment(AppState.self) var appState
-    
+    @Environment(AttributeManager.self) var attributeManager
+    @Environment(PlanManager.self) var planManager
+
     @State private var currentStep: OnboardingStep = .welcome
     @State private var onboardingManager = OnboardingManager()
 
@@ -65,7 +67,7 @@ struct OnboardingView: View {
                 ReviewRequestView(onNext: { currentStep = .paywall })
             case .paywall:
                 PaywallView(
-                    onNext: { appState.updateViewState(showTabBarView: true) },
+                    onNext: { completeOnboarding() },
                     daysPerYear: onboardingManager.daysPerYear,
                     outcomeSummary: onboardingManager.outcomeSummary
                 )
@@ -74,9 +76,19 @@ struct OnboardingView: View {
         .animation(.smooth, value: currentStep)
         .environment(onboardingManager)
     }
+
+    private func completeOnboarding() {
+        attributeManager.setInitialScores(ratings: onboardingManager.baselineRatings)
+        if let preset = onboardingManager.selectedPreset {
+            planManager.createPlan(preset: preset,
+                                   selectedApps: onboardingManager.selectedApps)
+        }
+
+        appState.updateViewState(showTabBarView: true)
+    }
 }
 
 #Preview {
     OnboardingView()
-        .environment(AppState())
+        .withPreviewManagers()
 }

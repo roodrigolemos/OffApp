@@ -11,7 +11,7 @@ struct BaselineAssessmentView: View {
     
     @Environment(OnboardingManager.self) var manager
 
-    @State private var ratings: [BaselineAttribute: Int] = [:]
+    @State private var ratings: [Attribute: Int] = [:]
     
     var onNext: () -> Void
     
@@ -57,7 +57,7 @@ private extension BaselineAssessmentView {
 
     var ratingsSection: some View {
         VStack(spacing: 14) {
-            ForEach(BaselineAttribute.allCases, id: \.self) { attribute in
+            ForEach(Attribute.allCases, id: \.self) { attribute in
                 ratingRow(attribute: attribute)
             }
         }
@@ -93,7 +93,7 @@ private extension BaselineAssessmentView {
 // MARK: - Helper Views
 private extension BaselineAssessmentView {
 
-    func ratingRow(attribute: BaselineAttribute) -> some View {
+    func ratingRow(attribute: Attribute) -> some View {
         let selected = ratings[attribute]
 
         return VStack(alignment: .leading, spacing: 10) {
@@ -168,7 +168,7 @@ private extension BaselineAssessmentView {
 private extension BaselineAssessmentView {
 
     var allAnswered: Bool {
-        ratings.count == BaselineAttribute.allCases.count
+        ratings.count == Attribute.allCases.count
     }
 }
 

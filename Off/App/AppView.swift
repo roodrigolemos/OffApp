@@ -11,8 +11,7 @@ import SwiftUI
 struct AppView: View {
 
     @Environment(\.scenePhase) var scenePhase
-
-    @State var appState: AppState = AppState()
+    @Environment(AppState.self) var appState
 
     var body: some View {
         AppViewBuilder(
@@ -24,16 +23,17 @@ struct AppView: View {
                 OnboardingView()
             }
         )
-        .environment(appState)
     }
 }
 
 #Preview("AppView - Tabbar") {
-    AppView(appState: AppState(showTabBar: true))
-        .previewEnvironment()
+    AppView()
+        .environment(AppState(showTabBar: true))
+        .withPreviewManagers()
 }
 
 #Preview("AppView - Onboarding") {
-    AppView(appState: AppState(showTabBar: true))
-        .previewEnvironment()
+    AppView()
+        .environment(AppState(showTabBar: false))
+        .withPreviewManagers()
 }

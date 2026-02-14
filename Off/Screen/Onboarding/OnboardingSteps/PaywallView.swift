@@ -9,16 +9,16 @@ import SwiftUI
 
 struct PaywallView: View {
 
-    @State private var selectedPlan: Plan = .weekly
+    @State private var selectedPlan: SubscriptionPlan = .yearly
     @State private var hasAppeared: Bool = false
     @State private var scrollOffset: CGFloat = 0
-    
+
     var onNext: () -> Void
-    
+
     var daysPerYear: Int
     var outcomeSummary: String
 
-    enum Plan { case yearly, weekly }
+    enum SubscriptionPlan { case yearly, weekly }
 
     var body: some View {
         ZStack {
@@ -26,20 +26,20 @@ struct PaywallView: View {
 
             VStack {
                 heroSection
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 18)
                     .padding(.top, 60)
                 Spacer().frame(height: 24)
                 benefitSection
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 18)
                 Spacer().frame(height: 30)
                 expectedResultsSection
                     .padding(.horizontal, 30)
                 Spacer()
                 planPicker
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 18)
                 Spacer().frame(height: 16)
                 ctaSection
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 18)
             }
 
             // Close button
@@ -79,7 +79,7 @@ private extension PaywallView {
                 .foregroundStyle(Color.offTextPrimary)
                 .tracking(-0.3)
 
-            Text("Stop auto pilot, reclaim **\(daysPerYear) days** a year,\nregain \(outcomeSummary) and more.")
+            Text("Stop auto pilot, reclaim \(daysPerYear) days a year")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Color.offTextSecondary)
                 .lineSpacing(3)
@@ -93,19 +93,19 @@ private extension PaywallView {
     var benefitSection: some View {
         VStack(alignment: .leading, spacing: 18) {
             benefitRow(
-                icon: "chart.line.uptrend.xyaxis",
-                title: "See what's changing",
-                description: "Track your clarity, focus, and energy over weeks."
+                icon: "text.bubble.fill",
+                title: "Personal Guidance",
+                description: "See what's changing, why, and what to expect next"
             )
             benefitRow(
                 icon: "arrow.triangle.2.circlepath",
-                title: "Adapt as you go",
-                description: "Your plan adjusts based on your real progress."
+                title: "A plan that adapts to you",
+                description: "Your journey adjusts based on your real progress"
             )
             benefitRow(
-                icon: "brain.head.profile",
-                title: "Understand your patterns",
-                description: "Know what's working — and what isn't."
+                icon: "chart.line.uptrend.xyaxis",
+                title: "See your progress",
+                description: "Track how you change over time"
             )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -123,9 +123,27 @@ private extension PaywallView {
     }
 
     var planPicker: some View {
-        HStack(spacing: 12) {
-            planCard(period: "Weekly", amount: "$7.99", unit: "/ week", plan: .weekly, isTrial: false)
-            planCard(period: "Yearly", amount: "$49.99", unit: "/ year", plan: .yearly)
+        ZStack {
+            VStack(spacing: 18) {
+                Text("✓ No commitment - Cancel Anytime")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Color.offTextSecondary)
+                
+                VStack(spacing: 6) {
+                    VStack {
+                        planCard(period: "Yearly", amount: "$39.99", unit: "/ year", plan: .yearly, isTrial: true)
+                        planCard(period: "Weekly", amount: "$7.99", unit: "/ week", plan: .weekly, isTrial: false)
+                    }
+                }
+            }
+
+//            Text("Limited time 50% OFF")
+//                .font(.system(size: 12, weight: .bold))
+//                .foregroundStyle(.white)
+//                .padding(.horizontal, 12)
+//                .padding(.vertical, 6)
+//                .background(Capsule().fill(Color.offAccent))
+//                .offset(y: -50)
         }
         .offset(y: hasAppeared ? 0 : 12)
         .opacity(hasAppeared ? 1 : 0)
@@ -135,7 +153,7 @@ private extension PaywallView {
     var ctaSection: some View {
         VStack(spacing: 0) {
             Button { } label: {
-                Text("Try for free")
+                Text(selectedPlan == .yearly ? "Start My 3-Day Free Trial" : "Subscribe Now")
                     .font(.system(size: 16, weight: .semibold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
@@ -150,7 +168,7 @@ private extension PaywallView {
             }
 
             HStack(spacing: 0) {
-                Text("Cancel anytime · ")
+                Text("Terms & Privacy · ")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Color.offTextMuted)
 
@@ -269,7 +287,7 @@ private extension PaywallView {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
-    func planCard(period: String, amount: String, unit: String, plan: Plan, isTrial: Bool = false) -> some View {
+    func planCard(period: String, amount: String, unit: String, plan: SubscriptionPlan, isTrial: Bool = false) -> some View {
         let isSelected = selectedPlan == plan
 
         return Button {
@@ -277,46 +295,48 @@ private extension PaywallView {
                 selectedPlan = plan
             }
         } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(period.uppercased())
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Color.offTextSecondary)
                         .tracking(0.3)
 
-                    if isTrial {
-                        Text("FREE TRIAL")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(Color.offAccent)
-                            .tracking(0.3)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(Capsule().fill(Color.offAccent.opacity(0.1)))
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Text(amount)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(Color.offTextPrimary)
+
+                        Text(unit)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Color.offTextMuted)
                     }
                 }
 
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(amount)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(Color.offTextPrimary)
+                Spacer()
 
-                    Text(unit)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color.offTextMuted)
+                if isTrial {
+                    Text("FREE TRIAL")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Color.offAccent)
+                        .tracking(0.3)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Capsule().fill(Color.offAccent.opacity(0.1)))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
+            .padding(14)
             .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(isSelected ? Color.offAccent.opacity(0.04) : Color.offBackgroundSecondary)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke(isSelected ? Color.offAccent : Color.offStroke, lineWidth: isSelected ? 1.5 : 1)
             )
             .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
-            .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
     }

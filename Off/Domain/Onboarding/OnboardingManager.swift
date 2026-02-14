@@ -10,13 +10,13 @@ import Observation
 @Observable
 final class OnboardingManager {
     
-    var baselineRatings: [BaselineAttribute: Int] = [:]
+    var baselineRatings: [Attribute: Int] = [:]
     var socialTime: String?
     var selectedPreset: PlanPreset?
     var selectedApps: Set<SocialApp> = []
     var selectedMirrorCards: Set<Int> = []
 
-    func setBaselineRatings(_ ratings: [BaselineAttribute: Int]) {
+    func setBaselineRatings(_ ratings: [Attribute: Int]) {
         baselineRatings = ratings
     }
 
@@ -53,7 +53,7 @@ final class OnboardingManager {
     }
 
     var baselineSummary: String {
-        let phrases: [BaselineAttribute: String] = [
+        let phrases: [Attribute: String] = [
             .clarity: "your clarity foggy",
             .focus: "your focus low",
             .energy: "your energy drained",
@@ -70,7 +70,7 @@ final class OnboardingManager {
     }
 
     var outcomeSummary: String {
-        let phrases: [BaselineAttribute: String] = [
+        let phrases: [Attribute: String] = [
             .clarity: "more clarity",
             .focus: "sharper focus",
             .energy: "steadier energy",
@@ -135,12 +135,12 @@ final class OnboardingManager {
         return Int(round((currentHours - projectedHours) * 365 / 24))
     }
 
-    func projectedScore(for attribute: BaselineAttribute) -> Int {
+    func projectedScore(for attribute: Attribute) -> Int {
         let baseline = baselineRatings[attribute] ?? 3
         return min(baseline + projectedDelta(for: attribute), 5)
     }
 
-    func projectedDelta(for attribute: BaselineAttribute) -> Int {
+    func projectedDelta(for attribute: Attribute) -> Int {
         let baseline = baselineRatings[attribute] ?? 3
         switch attribute {
         case .control:

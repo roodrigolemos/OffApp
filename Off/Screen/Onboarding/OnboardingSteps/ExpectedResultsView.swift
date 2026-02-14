@@ -39,7 +39,7 @@ private extension ExpectedResultsView {
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
 
-            Text("This plan is designed to gently reduce friction — and support better patterns over time.")
+            Text("This plan is designed to gently reduce friction and support better patterns over time.")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Color.offTextSecondary)
                 .lineSpacing(3)
@@ -114,7 +114,7 @@ private extension ExpectedResultsView {
                     }
                     .padding(.top, 2)
 
-                    Text("That's about **\(manager.daysSavedPerYear) days a year** back — without cutting social out completely.")
+                    Text("That's about **\(manager.daysSavedPerYear) days a year** back — without cutting social out completely")
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Color.offTextSecondary)
                         .lineSpacing(3)
@@ -146,7 +146,7 @@ private extension ExpectedResultsView {
                     ],
                     spacing: 12
                 ) {
-                    ForEach(BaselineAttribute.allCases, id: \.self) { attribute in
+                    ForEach(Attribute.allCases, id: \.self) { attribute in
                         let delta = manager.projectedDelta(for: attribute)
                         let projected = manager.projectedScore(for: attribute)
                         resultTile(

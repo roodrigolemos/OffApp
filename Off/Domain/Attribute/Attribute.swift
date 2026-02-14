@@ -1,11 +1,12 @@
 //
-//  BaselineAttribute.swift
+//  Attribute.swift
 //  Off
 //
 
 import Foundation
 
-enum BaselineAttribute: String, CaseIterable {
+enum Attribute: String, CaseIterable {
+    
     case clarity, focus, energy, drive, control, patience
 
     var label: String {

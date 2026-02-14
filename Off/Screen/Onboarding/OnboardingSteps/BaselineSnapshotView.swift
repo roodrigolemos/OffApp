@@ -43,7 +43,7 @@ private extension BaselineSnapshotView {
                 .foregroundStyle(Color.offTextPrimary)
                 .tracking(-0.3)
 
-            Text("Not a grade — just where you are right now. We'll build from here.")
+            Text("Not a grade, just where you are right now. We'll build from here.")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Color.offTextSecondary)
                 .lineSpacing(3)
@@ -106,7 +106,7 @@ private extension BaselineSnapshotView {
             ],
             spacing: 12
         ) {
-            ForEach(BaselineAttribute.allCases, id: \.self) { attribute in
+            ForEach(Attribute.allCases, id: \.self) { attribute in
                 let score = manager.baselineRatings[attribute] ?? 3
                 metricTile(
                     icon: attribute.icon,

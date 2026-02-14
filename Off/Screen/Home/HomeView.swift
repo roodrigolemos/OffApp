@@ -5,10 +5,12 @@
 //  Created by Rodrigo Lemos on 11/02/26.
 //
 
-
 import SwiftUI
 
 struct HomeView: View {
+
+    @Environment(PlanManager.self) var planManager
+    @Environment(AttributeManager.self) var attributeManager
 
     var body: some View {
         NavigationStack {
@@ -26,6 +28,10 @@ struct HomeView: View {
                     .padding(.bottom, 48)
                 }
                 .scrollIndicators(.hidden)
+            }
+            .task {
+                planManager.loadPlan()
+                attributeManager.loadScores()
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -371,7 +377,7 @@ private extension HomeView {
                         .fill(Color.white.opacity(0.4))
                         .frame(width: 44, height: 44)
 
-                    Image(systemName: "moon.stars")
+                    Image(systemName: planManager.activePlan?.preset?.icon ?? "questionmark")
                         .font(.system(size: 22, weight: .semibold))
                         .foregroundStyle(Color.offAccent)
                 }
@@ -379,7 +385,7 @@ private extension HomeView {
                 Spacer()
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Evening\nWind-Down")
+                    Text(planManager.activePlan?.preset?.name ?? "No Plan")
                         .font(.system(size: 22, weight: .heavy))
                         .foregroundStyle(Color.offTextPrimary)
                         .lineSpacing(3)
@@ -673,4 +679,7 @@ private extension HomeView {
     }
 }
 
-#Preview { HomeView() }
+#Preview {
+    HomeView()
+        .withPreviewManagers()
+}
