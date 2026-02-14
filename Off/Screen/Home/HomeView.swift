@@ -377,7 +377,7 @@ private extension HomeView {
                         .fill(Color.white.opacity(0.4))
                         .frame(width: 44, height: 44)
 
-                    Image(systemName: planManager.activePlan?.preset?.icon ?? "questionmark")
+                    Image(systemName: planManager.activePlan?.displayIcon ?? "questionmark")
                         .font(.system(size: 22, weight: .semibold))
                         .foregroundStyle(Color.offAccent)
                 }
@@ -385,7 +385,7 @@ private extension HomeView {
                 Spacer()
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(planManager.activePlan?.preset?.name ?? "No Plan")
+                    Text(planManager.activePlan?.displayName ?? "No Plan")
                         .font(.system(size: 22, weight: .heavy))
                         .foregroundStyle(Color.offTextPrimary)
                         .lineSpacing(3)

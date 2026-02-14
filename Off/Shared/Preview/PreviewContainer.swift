@@ -10,7 +10,11 @@ struct PreviewContainer {
     
     static let appState = AppState()
     static let attributeManager = AttributeManager(store: MockAttributeStore())
-    static let planManager = PlanManager(store: MockPlanStore())
+    static let planManager: PlanManager = {
+        let manager = PlanManager(store: MockPlanStore())
+        manager.loadPlan()
+        return manager
+    }()
 }
 
 extension View {

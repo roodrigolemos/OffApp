@@ -10,31 +10,42 @@ import SwiftUI
 
 struct SettingsView: View {
 
+    @Environment(PlanManager.self) var planManager
+
     @State private var eveningReminderOn: Bool = true
     @State private var weeklyFeedbackOn: Bool = true
     @State private var patternInsightsOn: Bool = false
+    @State private var showPlanDetails: Bool = false
 
     var body: some View {
-        ZStack {
-            Color.offBackgroundPrimary.ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                Color.offBackgroundPrimary.ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 0) {
-                    headerSection
-                    currentPlanSection
-                    screenTimeSection
-                    notificationsSection
-                    accountDataSection
+                ScrollView {
+                    VStack(spacing: 0) {
+                        headerSection
+                        currentPlanSection
+                        screenTimeSection
+                        notificationsSection
+                        accountDataSection
+                    }
+                    .padding(.bottom, 48)
                 }
-                .padding(.bottom, 48)
+                .scrollIndicators(.hidden)
             }
-            .scrollIndicators(.hidden)
+            .navigationDestination(isPresented: $showPlanDetails) {
+                PlanDetailsView()
+            }
         }
     }
+}
 
-    // MARK: - Header
+// MARK: - Sections
 
-    private var headerSection: some View {
+private extension SettingsView {
+
+    var headerSection: some View {
         Text("Settings")
             .font(.system(size: 38, weight: .heavy))
             .foregroundStyle(Color.offTextPrimary)
@@ -45,22 +56,83 @@ struct SettingsView: View {
             .padding(.bottom, 20)
     }
 
-    // MARK: - Current Plan
-
-    private var currentPlanSection: some View {
+    var currentPlanSection: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("CURRENT PLAN")
                 .font(.system(size: 12, weight: .heavy))
                 .foregroundStyle(Color.offTextMuted)
                 .tracking(1.6)
 
-            currentPlanCard
+            Button { showPlanDetails = true } label: {
+                currentPlanCard
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 36)
     }
 
-    private var currentPlanCard: some View {
+    var screenTimeSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("SCREEN TIME")
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundStyle(Color.offTextMuted)
+                .tracking(1.6)
+
+            screenTimeCard
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 36)
+    }
+
+    var notificationsSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("NOTIFICATIONS")
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundStyle(Color.offTextMuted)
+                .tracking(1.6)
+
+            notificationsCard
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 36)
+    }
+
+    var accountDataSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("ACCOUNT & DATA")
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundStyle(Color.offTextMuted)
+                .tracking(1.6)
+
+            VStack(spacing: 14) {
+                accountActionRow(
+                    icon: "square.and.arrow.up",
+                    title: "Export Check-in History",
+                    subtitle: "Download your data as CSV",
+                    iconColor: Color.offAccent
+                )
+
+                accountActionRow(
+                    icon: "creditcard",
+                    title: "Manage Subscription",
+                    subtitle: "View or change your plan",
+                    iconColor: Color.offAccent
+                )
+
+                deleteDataButton
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 36)
+    }
+}
+
+// MARK: - View Helpers
+
+private extension SettingsView {
+
+    var currentPlanCard: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(Color.offBackgroundSecondary)
@@ -78,35 +150,28 @@ struct SettingsView: View {
                 )
 
             HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 10) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.offAccent.opacity(0.12))
-                                .frame(width: 36, height: 36)
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.offAccent.opacity(0.12))
+                            .frame(width: 36, height: 36)
 
-                            Image(systemName: "moon.stars.fill")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Color.offAccent)
-                        }
+                        Image(systemName: planManager.activePlan?.displayIcon ?? "questionmark")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.offAccent)
+                    }
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Default Plan")
-                                .font(.system(size: 17, weight: .bold))
-                                .foregroundStyle(Color.offTextPrimary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(planManager.activePlan?.displayName ?? "No Plan")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(Color.offTextPrimary)
 
-                            Text("Active for 12 days")
+                        if let days = planManager.activePlan?.activeDays {
+                            Text("Active for \(days) days")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(Color.offTextSecondary)
                         }
                     }
-
-                    Button { } label: {
-                        Text("Modify Plan")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.offAccent)
-                    }
-                    .buttonStyle(.plain)
                 }
 
                 Spacer()
@@ -130,22 +195,7 @@ struct SettingsView: View {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
-    // MARK: - Screen Time
-
-    private var screenTimeSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("SCREEN TIME")
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(Color.offTextMuted)
-                .tracking(1.6)
-
-            screenTimeCard
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 36)
-    }
-
-    private var screenTimeCard: some View {
+    var screenTimeCard: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(Color.offBackgroundSecondary)
@@ -215,22 +265,7 @@ struct SettingsView: View {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
-    // MARK: - Notifications
-
-    private var notificationsSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("NOTIFICATIONS")
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(Color.offTextMuted)
-                .tracking(1.6)
-
-            notificationsCard
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 36)
-    }
-
-    private var notificationsCard: some View {
+    var notificationsCard: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(Color.offBackgroundSecondary)
@@ -312,38 +347,7 @@ struct SettingsView: View {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
-    // MARK: - Account & Data
-
-    private var accountDataSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("ACCOUNT & DATA")
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(Color.offTextMuted)
-                .tracking(1.6)
-
-            VStack(spacing: 14) {
-                accountActionRow(
-                    icon: "square.and.arrow.up",
-                    title: "Export Check-in History",
-                    subtitle: "Download your data as CSV",
-                    iconColor: Color.offAccent
-                )
-
-                accountActionRow(
-                    icon: "creditcard",
-                    title: "Manage Subscription",
-                    subtitle: "View or change your plan",
-                    iconColor: Color.offAccent
-                )
-
-                deleteDataButton
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 36)
-    }
-
-    private func accountActionRow(icon: String, title: String, subtitle: String, iconColor: Color) -> some View {
+    func accountActionRow(icon: String, title: String, subtitle: String, iconColor: Color) -> some View {
         Button { } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -388,7 +392,7 @@ struct SettingsView: View {
         .buttonStyle(.plain)
     }
 
-    private var deleteDataButton: some View {
+    var deleteDataButton: some View {
         Button { } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -433,4 +437,7 @@ struct SettingsView: View {
     }
 }
 
-#Preview { SettingsView() }
+#Preview {
+    SettingsView()
+        .withPreviewManagers()
+}

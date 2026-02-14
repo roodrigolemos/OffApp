@@ -15,22 +15,24 @@ struct ProgresssView: View {
     @State private var selectedMonthIndex: Int = 0
 
     var body: some View {
-        ZStack {
-            Color.offBackgroundPrimary.ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                Color.offBackgroundPrimary.ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 0) {
-                    headerSection
-                    attributeTrendsSection
-                    planAdherenceSection
-                    urgePatternSection
-                    weeklyFeedbackSection
-                    checkInHistorySection
-                    usageDataSection
+                ScrollView {
+                    VStack(spacing: 0) {
+                        headerSection
+                        attributeTrendsSection
+                        planAdherenceSection
+                        urgePatternSection
+                        weeklyFeedbackSection
+                        checkInHistorySection
+                        usageDataSection
+                    }
+                    .padding(.bottom, 48)
                 }
-                .padding(.bottom, 48)
+                .scrollIndicators(.hidden)
             }
-            .scrollIndicators(.hidden)
         }
     }
 }
