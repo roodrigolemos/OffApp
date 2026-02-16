@@ -14,6 +14,7 @@ struct HomeView: View {
     @Environment(CheckInManager.self) var checkInManager
 
     @State private var showCheckIn = false
+    @State private var isPlanCardFlipped = false
 
     var body: some View {
         NavigationStack {
@@ -385,33 +386,13 @@ private extension HomeView {
                     )
                 )
 
-            VStack(alignment: .leading, spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.4))
-                        .frame(width: 44, height: 44)
+            ZStack {
+                planCardFront
+                    .opacity(isPlanCardFlipped ? 0 : 1)
 
-                    Image(systemName: planManager.activePlan?.displayIcon ?? "questionmark")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(Color.offAccent)
-                }
-
-                Spacer()
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(planManager.activePlan?.displayName ?? "No Plan")
-                        .font(.system(size: 22, weight: .heavy))
-                        .foregroundStyle(Color.offTextPrimary)
-                        .lineSpacing(3)
-
-                    Text("Active plan")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.offAccent)
-                        .tracking(0.3)
-                }
+                planCardBack
+                    .opacity(isPlanCardFlipped ? 1 : 0)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(22)
         }
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -428,6 +409,89 @@ private extension HomeView {
                 )
         )
         .shadow(color: Color.offAccent.opacity(0.08), radius: 12, x: 0, y: 6)
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                isPlanCardFlipped.toggle()
+            }
+        }
+    }
+
+    var planCardFront: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.4))
+                    .frame(width: 44, height: 44)
+
+                Image(systemName: planManager.activePlan?.displayIcon ?? "questionmark")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Color.offAccent)
+            }
+
+            Spacer()
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(planCardDisplayName)
+                    .font(.system(size: 22, weight: .heavy))
+                    .foregroundStyle(Color.offTextPrimary)
+                    .lineSpacing(3)
+
+                Text("Active plan")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.offAccent)
+                    .tracking(0.3)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(22)
+    }
+
+    var planCardBack: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let plan = planManager.activePlan {
+                Text("PLAN DETAILS")
+                    .font(.system(size: 10, weight: .heavy))
+                    .foregroundStyle(Color.offAccent)
+                    .tracking(1.4)
+
+                Spacer()
+
+                VStack(alignment: .leading, spacing: 8) {
+                    if let whenText = planCardWhenText(for: plan) {
+                        planCardDetailRow(label: "WHEN", value: whenText)
+                    }
+
+                    planCardDetailRow(label: "DAYS", value: planCardDaysText(for: plan))
+
+                    if let actionsText = planCardActionsText(for: plan) {
+                        planCardDetailRow(label: "ACTIONS", value: actionsText)
+                    }
+                }
+            } else {
+                Spacer()
+
+                Text("No plan configured")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.offTextMuted)
+
+                Spacer()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(22)
+    }
+
+    func planCardDetailRow(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.system(size: 9, weight: .heavy))
+                .foregroundStyle(Color.offTextMuted)
+                .tracking(1.2)
+
+            Text(value)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.offTextPrimary)
+        }
     }
 
     var thisWeekCard: some View {
@@ -690,6 +754,49 @@ private extension HomeView {
         case 12..<17: return "Good afternoon"
         default: return "Good evening"
         }
+    }
+
+    var planCardDisplayName: String {
+        guard let name = planManager.activePlan?.displayName else { return "No Plan" }
+        if let spaceIndex = name.firstIndex(of: " ") {
+            var result = name
+            result.replaceSubrange(spaceIndex...spaceIndex, with: "\n")
+            return result
+        }
+        return name
+    }
+
+    func planCardWhenText(for plan: PlanSnapshot) -> String? {
+        switch plan.timeBoundary {
+        case .afterTime:
+            guard let time = plan.afterTime else { return nil }
+            let hour = time.hour > 12 ? time.hour - 12 : time.hour
+            let period = time.hour >= 12 ? "PM" : "AM"
+            let minuteStr = time.minute > 0 ? ":\(String(format: "%02d", time.minute))" : ""
+            return "After \(hour)\(minuteStr) \(period)"
+        case .duringWindows:
+            return "During set windows"
+        case .never:
+            return "Never"
+        case .anytime:
+            return nil
+        }
+    }
+
+    func planCardDaysText(for plan: PlanSnapshot) -> String {
+        if plan.days == .everyday { return "Everyday" }
+        if plan.days == .weekdays { return "Weekdays" }
+        if plan.days == .weekends { return "Weekends" }
+        return "Custom"
+    }
+
+    func planCardActionsText(for plan: PlanSnapshot) -> String? {
+        var actions: [String] = []
+        if plan.phoneBehavior.removeFromHomeScreen { actions.append("Hide") }
+        if plan.phoneBehavior.turnOffNotifications { actions.append("Mute") }
+        if plan.phoneBehavior.logOutAccounts { actions.append("Logout") }
+        if plan.phoneBehavior.deleteApps { actions.append("Delete") }
+        return actions.isEmpty ? nil : actions.joined(separator: " · ")
     }
 }
 
