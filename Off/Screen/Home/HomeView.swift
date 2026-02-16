@@ -11,6 +11,7 @@ struct HomeView: View {
 
     @Environment(PlanManager.self) var planManager
     @Environment(AttributeManager.self) var attributeManager
+    @Environment(CheckInManager.self) var checkInManager
 
     @State private var showCheckIn = false
 
@@ -22,8 +23,13 @@ struct HomeView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         headerSection
-                        checkInPromptCard
-//                         checkInCompletedCard
+
+                        if checkInManager.hasCheckedInToday {
+                            checkInCompletedCard
+                        } else {
+                            checkInPromptCard
+                        }
+
                         insightsGrid
                         weekProgressSection
                     }
@@ -34,11 +40,15 @@ struct HomeView: View {
             .task {
                 planManager.loadPlan()
                 attributeManager.loadScores()
+                checkInManager.loadAll()
             }
             .navigationBarTitleDisplayMode(.inline)
-            .fullScreenCover(isPresented: $showCheckIn) {
+            .fullScreenCover(isPresented: $showCheckIn, onDismiss: {
+                checkInManager.loadAll()
+            }) {
                 CheckInView()
             }
+            .animation(.easeInOut, value: checkInManager.hasCheckedInToday)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { } label: {
