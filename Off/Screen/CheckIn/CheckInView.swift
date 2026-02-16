@@ -5,10 +5,22 @@
 //  Created by Rodrigo Lemos on 11/02/26.
 //
 
-
 import SwiftUI
 
 struct CheckInView: View {
+
+    @Environment(\.dismiss) var dismiss
+    @Environment(CheckInManager.self) var checkInManager
+    @Environment(PlanManager.self) var planManager
+
+    @State private var clarity: AttributeRating?
+    @State private var focus: AttributeRating?
+    @State private var energy: AttributeRating?
+    @State private var drive: AttributeRating?
+    @State private var patience: AttributeRating?
+    @State private var control: ControlRating?
+    @State private var urgeLevel: UrgeLevel?
+    @State private var planAdherence: PlanAdherence?
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
@@ -24,11 +36,28 @@ struct CheckInView: View {
             .padding(.bottom, 32)
         }
         .background(Color.offBackgroundPrimary)
+        .alert(
+            "Error",
+            isPresented: .init(
+                get: { checkInManager.error != nil },
+                set: { if !$0 { checkInManager.error = nil } }
+            ),
+            actions: { Button("OK") { checkInManager.error = nil } },
+            message: { Text(checkInManager.error?.localizedDescription ?? "") }
+        )
     }
+}
 
-    // MARK: - Title
+#Preview {
+    CheckInView()
+        .withPreviewManagers()
+}
 
-    private var titleSection: some View {
+// MARK: - Sections
+
+private extension CheckInView {
+
+    var titleSection: some View {
         HStack {
             Text("Check-in")
                 .font(.system(size: 28, weight: .heavy))
@@ -36,7 +65,7 @@ struct CheckInView: View {
 
             Spacer()
 
-            Button { } label: {
+            Button { dismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Color.offTextSecondary)
@@ -48,11 +77,9 @@ struct CheckInView: View {
         .padding(.top, 16)
     }
 
-    // MARK: - Header
-
-    private var headerSection: some View {
+    var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Reflect on your day.")
+            Text("Reflect on your day")
                 .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(Color.offTextPrimary)
 
@@ -79,9 +106,7 @@ struct CheckInView: View {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
-    // MARK: - Attributes Section
-
-    private var attributesSection: some View {
+    var attributesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("How your mind feels")
                 .font(.system(size: 22, weight: .heavy))
@@ -94,51 +119,49 @@ struct CheckInView: View {
                     icon: "brain.head.profile",
                     title: "Clarity",
                     subtitle: "Your mind feels",
-                    options: ["Worse", "Same", "Better"],
-                    selected: "Better"
+                    selection: $clarity,
+                    labels: [.worse: "Worse", .same: "Same", .better: "Better"]
                 )
                 attributeCard(
                     icon: "scope",
                     title: "Focus",
                     subtitle: "Sustaining attention feels",
-                    options: ["Worse", "Same", "Better"],
-                    selected: "Same"
+                    selection: $focus,
+                    labels: [.worse: "Worse", .same: "Same", .better: "Better"]
                 )
                 attributeCard(
                     icon: "bolt.fill",
                     title: "Energy",
                     subtitle: "Your mental energy feels",
-                    options: ["Worse", "Same", "Better"],
-                    selected: nil
+                    selection: $energy,
+                    labels: [.worse: "Worse", .same: "Same", .better: "Better"]
                 )
                 attributeCard(
                     icon: "flag.checkered",
                     title: "Drive",
                     subtitle: "Starting things feels",
-                    options: ["Worse", "Same", "Better"],
-                    selected: nil
+                    selection: $drive,
+                    labels: [.worse: "Worse", .same: "Same", .better: "Better"]
                 )
                 attributeCard(
                     icon: "hand.raised.slash.fill",
                     title: "Control",
                     subtitle: "Your phone use feels",
-                    options: ["Automatic", "Same", "Conscious"],
-                    selected: nil
+                    selection: $control,
+                    labels: [.automatic: "Automatic", .same: "Same", .conscious: "Conscious"]
                 )
                 attributeCard(
                     icon: "hourglass",
                     title: "Patience",
                     subtitle: "Your tolerance for boredom feels",
-                    options: ["Worse", "Same", "Better"],
-                    selected: nil
+                    selection: $patience,
+                    labels: [.worse: "Worse", .same: "Same", .better: "Better"]
                 )
             }
         }
     }
 
-    // MARK: - Urge Section
-
-    private var urgeSection: some View {
+    var urgeSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Urge")
                 .font(.system(size: 22, weight: .heavy))
@@ -150,15 +173,13 @@ struct CheckInView: View {
                 icon: "flame.fill",
                 title: "Urge",
                 subtitle: "How strong was your urge to use social media today?",
-                options: ["None", "Noticeable", "Persistent", "Took over"],
-                selected: "Noticeable"
+                selection: $urgeLevel,
+                labels: [.none: "None", .noticeable: "Noticeable", .persistent: "Persistent", .tookOver: "Took over"]
             )
         }
     }
 
-    // MARK: - Plan Section
-
-    private var planSection: some View {
+    var planSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Plan")
                 .font(.system(size: 22, weight: .heavy))
@@ -169,17 +190,36 @@ struct CheckInView: View {
             attributeCard(
                 icon: "calendar.badge.checkmark",
                 title: "Did you follow your plan today?",
-                subtitle: "This is only used to interpret the weekly pattern.",
-                options: ["Yes", "Partially", "No"],
-                selected: "Yes"
+                subtitle: isPlanDay
+                    ? "This is only used to interpret the weekly pattern."
+                    : "Today is not a plan day. You can skip this.",
+                selection: $planAdherence,
+                labels: [.yes: "Yes", .partially: "Partially", .no: "No"]
             )
         }
     }
 
-    // MARK: - Submit
+    var submitSection: some View {
+        Button {
+            guard let clarity, let focus, let energy, let drive,
+                  let patience, let control, let urgeLevel else { return }
 
-    private var submitSection: some View {
-        Button { } label: {
+            let snapshot = CheckInSnapshot(
+                clarity: clarity,
+                focus: focus,
+                energy: energy,
+                drive: drive,
+                patience: patience,
+                control: control,
+                urgeLevel: urgeLevel,
+                planAdherence: planAdherence
+            )
+            checkInManager.save(snapshot)
+
+            if checkInManager.error == nil {
+                dismiss()
+            }
+        } label: {
             HStack {
                 Text("Save")
                     .font(.system(size: 16, weight: .semibold))
@@ -195,17 +235,22 @@ struct CheckInView: View {
             .foregroundStyle(.white)
         }
         .buttonStyle(.plain)
+        .disabled(!allAnswered)
+        .opacity(allAnswered ? 1 : 0.5)
         .padding(.top, 12)
     }
+}
 
-    // MARK: - Attribute Card
+// MARK: - View Helpers
 
-    private func attributeCard(
+private extension CheckInView {
+
+    func attributeCard<T: Hashable>(
         icon: String,
         title: String,
         subtitle: String,
-        options: [String],
-        selected: String?
+        selection: Binding<T?>,
+        labels: KeyValuePairs<T, String>
     ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
@@ -234,10 +279,10 @@ struct CheckInView: View {
             }
 
             HStack(spacing: 10) {
-                ForEach(options, id: \.self) { option in
-                    let isSelected = option == selected
-                    Button { } label: {
-                        Text(option)
+                ForEach(Array(labels), id: \.key) { key, label in
+                    let isSelected = selection.wrappedValue == key
+                    Button { selection.wrappedValue = key } label: {
+                        Text(label)
                             .font(.system(size: 13, weight: .semibold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 11)
@@ -272,4 +317,22 @@ struct CheckInView: View {
     }
 }
 
-#Preview { CheckInView() }
+// MARK: - Helpers
+
+private extension CheckInView {
+
+    var isPlanDay: Bool {
+        planManager.isPlanDay
+    }
+
+    var allAnswered: Bool {
+        clarity != nil
+        && focus != nil
+        && energy != nil
+        && drive != nil
+        && patience != nil
+        && control != nil
+        && urgeLevel != nil
+        && (!isPlanDay || planAdherence != nil)
+    }
+}

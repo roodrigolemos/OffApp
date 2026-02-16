@@ -18,13 +18,14 @@ struct OffApp: App {
     @State private var appState: AppState
     @State private var attributeManager: AttributeManager
     @State private var planManager: PlanManager
-    
+    @State private var checkInManager: CheckInManager
+
     private let container: ModelContainer
     private let config: BuildConfiguration
 
     init() {
         do {
-            let schema = Schema([AttributeScores.self, Plan.self])
+            let schema = Schema([AttributeScores.self, Plan.self, CheckIn.self])
             let modelConfig = ModelConfiguration("Off.store", schema: schema)
             container = try ModelContainer(for: schema, configurations: modelConfig)
         } catch {
@@ -45,12 +46,16 @@ struct OffApp: App {
         case .mock:
             _attributeManager = State(initialValue: AttributeManager(store: MockAttributeStore()))
             _planManager = State(initialValue: PlanManager(store: MockPlanStore()))
+            _checkInManager = State(initialValue: CheckInManager(store: MockCheckInStore()))
         case .dev, .prod:
             _attributeManager = State(initialValue: AttributeManager(
                 store: SwiftDataAttributeStore(context: container.mainContext)
             ))
             _planManager = State(initialValue: PlanManager(
                 store: SwiftDataPlanStore(context: container.mainContext)
+            ))
+            _checkInManager = State(initialValue: CheckInManager(
+                store: SwiftDataCheckInStore(context: container.mainContext)
             ))
         }
     }
@@ -62,6 +67,7 @@ struct OffApp: App {
                 .environment(appState)
                 .environment(attributeManager)
                 .environment(planManager)
+                .environment(checkInManager)
         }
     }
 }

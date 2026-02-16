@@ -12,6 +12,8 @@ struct HomeView: View {
     @Environment(PlanManager.self) var planManager
     @Environment(AttributeManager.self) var attributeManager
 
+    @State private var showCheckIn = false
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -34,6 +36,9 @@ struct HomeView: View {
                 attributeManager.loadScores()
             }
             .navigationBarTitleDisplayMode(.inline)
+            .fullScreenCover(isPresented: $showCheckIn) {
+                CheckInView()
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { } label: {
@@ -70,7 +75,7 @@ private extension HomeView {
     }
 
     var checkInPromptCard: some View {
-        Button { } label: {
+        Button { showCheckIn = true } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: 32, style: .continuous)
                     .fill(

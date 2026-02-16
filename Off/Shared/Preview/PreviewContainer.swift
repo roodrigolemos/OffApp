@@ -15,6 +15,7 @@ struct PreviewContainer {
         manager.loadPlan()
         return manager
     }()
+    static let checkInManager = CheckInManager(store: MockCheckInStore())
 }
 
 extension View {
@@ -24,5 +25,6 @@ extension View {
             .environment(PreviewContainer.appState)
             .environment(PreviewContainer.attributeManager)
             .environment(PreviewContainer.planManager)
+            .environment(PreviewContainer.checkInManager)
     }
 }

@@ -15,6 +15,11 @@ final class PlanManager {
     var activePlan: PlanSnapshot?
     var error: PlanError?
 
+    var isPlanDay: Bool {
+        guard let plan = activePlan else { return false }
+        return plan.days.contains(date: .now)
+    }
+
     init(store: PlanStore) {
         self.store = store
     }
