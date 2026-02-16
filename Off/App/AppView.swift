@@ -12,6 +12,9 @@ struct AppView: View {
 
     @Environment(\.scenePhase) var scenePhase
     @Environment(AppState.self) var appState
+    @Environment(PlanManager.self) var planManager
+    @Environment(AttributeManager.self) var attributeManager
+    @Environment(CheckInManager.self) var checkInManager
 
     var body: some View {
         AppViewBuilder(
@@ -23,6 +26,13 @@ struct AppView: View {
                 OnboardingView()
             }
         )
+        .task { bootstrap() }
+    }
+
+    private func bootstrap() {
+        planManager.loadPlan()
+        attributeManager.loadScores()
+        checkInManager.loadAll()
     }
 }
 

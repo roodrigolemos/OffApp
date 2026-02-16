@@ -37,10 +37,8 @@ final class CheckInManager {
             try store.save(snapshot)
             loadAll()
             error = nil
-            print("✅ CheckIn saved — total: \(checkIns.count), today: + \(hasCheckedInToday)")
         } catch {
             self.error = .saveFailed
-            print("❌ CheckIn save failed") 
         }
     }
 }

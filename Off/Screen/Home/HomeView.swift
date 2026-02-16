@@ -23,24 +23,13 @@ struct HomeView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         headerSection
-
-                        if checkInManager.hasCheckedInToday {
-                            checkInCompletedCard
-                        } else {
-                            checkInPromptCard
-                        }
-
+                        mainCheckInArea
                         insightsGrid
                         weekProgressSection
                     }
                     .padding(.bottom, 48)
                 }
                 .scrollIndicators(.hidden)
-            }
-            .task {
-                planManager.loadPlan()
-                attributeManager.loadScores()
-                checkInManager.loadAll()
             }
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $showCheckIn, onDismiss: {
@@ -84,143 +73,16 @@ private extension HomeView {
         .padding(.bottom, 36)
     }
 
-    var checkInPromptCard: some View {
-        Button { showCheckIn = true } label: {
-            ZStack {
-                RoundedRectangle(cornerRadius: 32, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.offAccent.opacity(0.03),
-                                Color.offAccentSoft.opacity(0.08)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-
-                HStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("How's your\nmind today?")
-                            .font(.system(size: 26, weight: .heavy))
-                            .foregroundStyle(Color.offTextPrimary)
-                            .lineSpacing(4)
-
-                        Text("Tap to begin check-in")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(Color.offTextSecondary)
-                    }
-
-                    Spacer()
-
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.offAccent, Color.offAccent.opacity(0.75)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 64, height: 64)
-
-                        Circle()
-                            .fill(Color.offAccent.opacity(0.15))
-                            .frame(width: 78, height: 78)
-
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-                }
-                .padding(28)
+    var mainCheckInArea: some View {
+        VStack(spacing: 20) {
+            if checkInManager.hasCheckedInToday {
+                checkInCompletedCard
+                    .transition(.opacity)
+            } else {
+                checkInPromptCard
+                    .transition(.opacity)
             }
-            .overlay(
-                RoundedRectangle(cornerRadius: 32, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.offAccent.opacity(0.2),
-                                Color.offAccent.opacity(0.05)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.5
-                    )
-            )
-            .shadow(color: Color.offAccent.opacity(0.06), radius: 20, x: 0, y: 8)
         }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 24)
-        .padding(.bottom, 32)
-    }
-
-    var checkInCompletedCard: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.offSuccess.opacity(0.03),
-                            Color.offSuccess.opacity(0.08)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Check-in\ncomplete")
-                        .font(.system(size: 26, weight: .heavy))
-                        .foregroundStyle(Color.offTextPrimary)
-                        .lineSpacing(4)
-
-                    Text("See you tomorrow")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.offTextSecondary)
-                }
-
-                Spacer()
-
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.offSuccess, Color.offSuccess.opacity(0.75)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 64, height: 64)
-
-                    Circle()
-                        .fill(Color.offSuccess.opacity(0.15))
-                        .frame(width: 78, height: 78)
-
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundStyle(.white)
-                }
-            }
-            .padding(28)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            Color.offSuccess.opacity(0.2),
-                            Color.offSuccess.opacity(0.05)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.5
-                )
-        )
-        .shadow(color: Color.offSuccess.opacity(0.06), radius: 20, x: 0, y: 8)
         .padding(.horizontal, 24)
         .padding(.bottom, 32)
     }
@@ -303,6 +165,143 @@ private extension HomeView {
 // MARK: - Helper Views
 
 private extension HomeView {
+    
+    var checkInPromptCard: some View {
+        Button { showCheckIn = true } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.offAccent.opacity(0.03),
+                                Color.offAccentSoft.opacity(0.08)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("How's your\nmind today?")
+                            .font(.system(size: 26, weight: .heavy))
+                            .foregroundStyle(Color.offTextPrimary)
+                            .lineSpacing(4)
+
+                        Text("Tap to begin check-in")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Color.offTextSecondary)
+                    }
+
+                    Spacer()
+
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.offAccent, Color.offAccent.opacity(0.75)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 64, height: 64)
+
+                        Circle()
+                            .fill(Color.offAccent.opacity(0.15))
+                            .frame(width: 78, height: 78)
+
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                }
+                .padding(28)
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.offAccent.opacity(0.2),
+                                Color.offAccent.opacity(0.05)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.5
+                    )
+            )
+            .shadow(color: Color.offAccent.opacity(0.06), radius: 20, x: 0, y: 8)
+        }
+        .buttonStyle(.plain)
+    }
+    
+    var checkInCompletedCard: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.offSuccess.opacity(0.03),
+                            Color.offSuccess.opacity(0.08)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Check-in\ncomplete")
+                        .font(.system(size: 26, weight: .heavy))
+                        .foregroundStyle(Color.offTextPrimary)
+                        .lineSpacing(4)
+
+                    Text("See you tomorrow")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.offTextSecondary)
+                }
+
+                Spacer()
+
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.offSuccess, Color.offSuccess.opacity(0.75)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 64, height: 64)
+
+                    Circle()
+                        .fill(Color.offSuccess.opacity(0.15))
+                        .frame(width: 78, height: 78)
+
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .padding(28)
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.offSuccess.opacity(0.2),
+                            Color.offSuccess.opacity(0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+        )
+        .shadow(color: Color.offSuccess.opacity(0.06), radius: 20, x: 0, y: 8)
+    }
 
     var streakCard: some View {
         ZStack {
