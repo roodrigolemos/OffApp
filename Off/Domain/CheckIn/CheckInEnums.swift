@@ -78,3 +78,11 @@ struct WeekDayState: Equatable, Identifiable {
     let label: String
     let state: DayAdherenceState
 }
+
+struct WeekDayCardData: Identifiable, Equatable {
+    let id: Int
+    let dayLabel: String
+    let dateNumber: String
+    let isToday: Bool
+    let checkIn: CheckInSnapshot?
+}

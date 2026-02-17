@@ -14,6 +14,7 @@ final class CheckInManager {
 
     var checkIns: [CheckInSnapshot] = []
     var weekDays: [WeekDayState] = []
+    var weekDayCards: [WeekDayCardData] = []
     var currentStreak: Int = 0
     var error: CheckInError?
 
@@ -29,6 +30,7 @@ final class CheckInManager {
         loadCheckIns()
         calculateStreak(plan: plan)
         calculateWeekDays(plan: plan)
+        calculateWeekDayCards()
     }
 
     func loadCheckIns() {
@@ -111,6 +113,45 @@ final class CheckInManager {
         }
 
         weekDays = result
+    }
+
+    func calculateWeekDayCards() {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2
+
+        let today = calendar.startOfDay(for: .now)
+        guard let monday = calendar.dateInterval(of: .weekOfYear, for: today)?.start else { return }
+
+        let labels = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+
+        var checkInsByDate: [String: CheckInSnapshot] = [:]
+        for checkIn in checkIns {
+            checkInsByDate[formatter.string(from: checkIn.date)] = checkIn
+        }
+
+        var result: [WeekDayCardData] = []
+
+        for i in 0..<7 {
+            guard let day = calendar.date(byAdding: .day, value: i, to: monday) else { continue }
+            let key = formatter.string(from: day)
+            let dayStart = calendar.startOfDay(for: day)
+
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "d"
+
+            result.append(WeekDayCardData(
+                id: i,
+                dayLabel: labels[i],
+                dateNumber: dateFormatter.string(from: day),
+                isToday: dayStart == today,
+                checkIn: checkInsByDate[key]
+            ))
+        }
+
+        weekDayCards = result
     }
 
     func calculateStreak(plan: PlanSnapshot?) {

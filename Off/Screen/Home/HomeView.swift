@@ -38,6 +38,7 @@ struct HomeView: View {
                 checkInManager.loadCheckIns()
                 checkInManager.calculateStreak(plan: planManager.activePlan)
                 checkInManager.calculateWeekDays(plan: planManager.activePlan)
+                checkInManager.calculateWeekDayCards()
             }) {
                 CheckInView()
             }
@@ -124,48 +125,16 @@ private extension HomeView {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
-                    dayCard(
-                        day: "MON", date: "3", isToday: false, hasCheckIn: true,
-                        attributes: [
-                            ("brain.head.profile", "arrow.up", Color.offAccent),
-                            ("scope", "arrow.up", Color.offAccent),
-                            ("bolt.fill", "equal", Color.offTextMuted),
-                            ("flag.checkered", "arrow.up", Color.offAccent),
-                            ("hand.raised.slash.fill", "arrow.up", Color.offAccent),
-                            ("hourglass", "equal", Color.offTextMuted)
-                        ],
-                        urgeText: "Noticeable"
-                    )
-                    dayCard(
-                        day: "TUE", date: "4", isToday: false, hasCheckIn: true,
-                        attributes: [
-                            ("brain.head.profile", "equal", Color.offTextMuted),
-                            ("scope", "arrow.down", Color.offWarn),
-                            ("bolt.fill", "arrow.up", Color.offAccent),
-                            ("flag.checkered", "equal", Color.offTextMuted),
-                            ("hand.raised.slash.fill", "equal", Color.offTextMuted),
-                            ("hourglass", "arrow.up", Color.offAccent)
-                        ],
-                        urgeText: "None"
-                    )
-                    dayCard(
-                        day: "WED", date: "5", isToday: false, hasCheckIn: true,
-                        attributes: [
-                            ("brain.head.profile", "arrow.up", Color.offAccent),
-                            ("scope", "arrow.up", Color.offAccent),
-                            ("bolt.fill", "arrow.up", Color.offAccent),
-                            ("flag.checkered", "arrow.up", Color.offAccent),
-                            ("hand.raised.slash.fill", "arrow.up", Color.offAccent),
-                            ("hourglass", "arrow.up", Color.offAccent)
-                        ],
-                        urgeText: "None"
-                    )
-                    dayCard(day: "THU", date: "6", isToday: false, hasCheckIn: false, attributes: [], urgeText: nil)
-                    dayCard(day: "FRI", date: "7", isToday: false, hasCheckIn: false, attributes: [], urgeText: nil)
-                    dayCard(day: "SAT", date: "8", isToday: false, hasCheckIn: false, attributes: [], urgeText: nil)
-                    dayCard(
-                        day: "SUN", date: "9", isToday: true, hasCheckIn: false, attributes: [], urgeText: nil
-                    )
+                    ForEach(checkInManager.weekDayCards) { card in
+                        dayCard(
+                            day: card.dayLabel,
+                            date: card.dateNumber,
+                            isToday: card.isToday,
+                            hasCheckIn: card.checkIn != nil,
+                            attributes: attributesForCard(card),
+                            urgeText: card.checkIn?.urgeLevel.label
+                        )
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 2)
@@ -805,6 +774,42 @@ private extension HomeView {
         if plan.days == .weekdays { return "Weekdays" }
         if plan.days == .weekends { return "Weekends" }
         return "Custom"
+    }
+
+    func attributesForCard(_ card: WeekDayCardData) -> [(icon: String, arrow: String, color: Color)] {
+        guard let checkIn = card.checkIn else { return [] }
+
+        func attributeArrowColor(_ rating: AttributeRating) -> (String, Color) {
+            switch rating {
+            case .worse:  ("arrow.down", Color.offWarn)
+            case .same:   ("equal", Color.offTextMuted)
+            case .better: ("arrow.up", Color.offAccent)
+            }
+        }
+
+        func controlArrowColor(_ rating: ControlRating) -> (String, Color) {
+            switch rating {
+            case .automatic: ("arrow.down", Color.offWarn)
+            case .same:      ("equal", Color.offTextMuted)
+            case .conscious: ("arrow.up", Color.offAccent)
+            }
+        }
+
+        let clarity = attributeArrowColor(checkIn.clarity)
+        let focus = attributeArrowColor(checkIn.focus)
+        let energy = attributeArrowColor(checkIn.energy)
+        let drive = attributeArrowColor(checkIn.drive)
+        let control = controlArrowColor(checkIn.control)
+        let patience = attributeArrowColor(checkIn.patience)
+
+        return [
+            ("brain.head.profile", clarity.0, clarity.1),
+            ("scope", focus.0, focus.1),
+            ("bolt.fill", energy.0, energy.1),
+            ("flag.checkered", drive.0, drive.1),
+            ("hand.raised.slash.fill", control.0, control.1),
+            ("hourglass", patience.0, patience.1)
+        ]
     }
 
     func planCardActionsText(for plan: PlanSnapshot) -> String? {
