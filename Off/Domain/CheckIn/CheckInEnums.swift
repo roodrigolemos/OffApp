@@ -62,3 +62,19 @@ enum PlanAdherence: Int, CaseIterable, Codable, Hashable {
         }
     }
 }
+
+enum DayAdherenceState: Equatable {
+    case followed
+    case partially
+    case notFollowed
+    case missed
+    case pending
+    case upcoming
+    case restDay
+}
+
+struct WeekDayState: Equatable, Identifiable {
+    let id: Int
+    let label: String
+    let state: DayAdherenceState
+}

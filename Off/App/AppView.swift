@@ -30,6 +30,7 @@ struct AppView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 planManager.calculateStreak(checkIns: checkInManager.checkIns)
+                checkInManager.calculateWeekDays(plan: planManager.activePlan)
             }
         }
     }
@@ -39,6 +40,7 @@ struct AppView: View {
         attributeManager.loadScores()
         checkInManager.loadAll()
         planManager.calculateStreak(checkIns: checkInManager.checkIns)
+        checkInManager.calculateWeekDays(plan: planManager.activePlan)
     }
 }
 

@@ -36,6 +36,7 @@ struct HomeView: View {
             .fullScreenCover(isPresented: $showCheckIn, onDismiss: {
                 checkInManager.loadAll()
                 planManager.calculateStreak(checkIns: checkInManager.checkIns)
+                checkInManager.calculateWeekDays(plan: planManager.activePlan)
             }) {
                 CheckInView()
             }
@@ -51,6 +52,11 @@ struct HomeView: View {
             }
         }
     }
+}
+
+#Preview {
+    HomeView()
+        .withPreviewManagers()
 }
 
 // MARK: - Sections
@@ -507,7 +513,7 @@ private extension HomeView {
                         .foregroundStyle(Color.offTextMuted)
                         .tracking(1.6)
 
-                    Text("Your plan days")
+                    Text("Your week")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color.offTextSecondary)
                 }
@@ -515,13 +521,9 @@ private extension HomeView {
                 Spacer()
 
                 HStack(spacing: 6) {
-                    dayDot(label: "M", state: .filled)
-                    dayDot(label: "T", state: .filled)
-                    dayDot(label: "W", state: .partial)
-                    dayDot(label: "T", state: .filled)
-                    dayDot(label: "F", state: .partial)
-                    dayDot(label: "S", state: .stroke)
-                    dayDot(label: "S", state: .stroke)
+                    ForEach(checkInManager.weekDays) { day in
+                        dayDot(label: day.label, state: day.state)
+                    }
                 }
             }
             .padding(.horizontal, 24)
@@ -607,30 +609,40 @@ private extension HomeView {
         .buttonStyle(.plain)
     }
 
-    enum DotState { case filled, partial, stroke }
-
-    func dayDot(label: String, state: DotState) -> some View {
+    func dayDot(label: String, state: DayAdherenceState) -> some View {
         VStack(spacing: 6) {
             Group {
                 switch state {
-                case .filled:
+                case .followed:
                     Circle()
                         .fill(Color.offAccent)
                         .frame(width: 8, height: 8)
-                case .partial:
+                case .partially:
                     Circle()
                         .fill(Color.offAccent.opacity(0.4))
                         .frame(width: 8, height: 8)
-                case .stroke:
+                case .notFollowed, .missed:
+                    Circle()
+                        .fill(Color.offWarn)
+                        .frame(width: 8, height: 8)
+                case .pending:
+                    Circle()
+                        .stroke(Color.offAccent, lineWidth: 1)
+                        .frame(width: 8, height: 8)
+                case .upcoming:
                     Circle()
                         .stroke(Color.offStroke, lineWidth: 1)
+                        .frame(width: 8, height: 8)
+                case .restDay:
+                    Circle()
+                        .fill(Color.offDotInactive)
                         .frame(width: 8, height: 8)
                 }
             }
 
             Text(label)
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(state == .stroke ? Color.offTextMuted : Color.offTextSecondary)
+                .foregroundStyle(state == .upcoming || state == .restDay ? Color.offTextMuted : Color.offTextSecondary)
         }
     }
 
@@ -799,9 +811,4 @@ private extension HomeView {
         if plan.phoneBehavior.deleteApps { actions.append("Delete") }
         return actions.isEmpty ? nil : actions.joined(separator: " · ")
     }
-}
-
-#Preview {
-    HomeView()
-        .withPreviewManagers()
 }

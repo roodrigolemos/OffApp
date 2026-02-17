@@ -10,8 +10,18 @@ final class MockCheckInStore: CheckInStore {
 
     func fetchAll() throws -> [CheckInSnapshot] {
         let calendar = Calendar.current
-        return (1...4).compactMap { daysAgo in
+        // Skip daysAgo == 3 to create a missed day gap
+        let daysToGenerate = [1, 2, 4, 5]
+        return daysToGenerate.compactMap { daysAgo in
             guard let date = calendar.date(byAdding: .day, value: -daysAgo, to: .now) else { return nil }
+
+            let adherence: PlanAdherence? = switch daysAgo {
+            case 2: .partially
+            case 4: .no
+            case 5: nil
+            default: .yes
+            }
+
             return CheckInSnapshot(
                 date: date,
                 clarity: .better,
@@ -21,7 +31,7 @@ final class MockCheckInStore: CheckInStore {
                 patience: .better,
                 control: .conscious,
                 urgeLevel: .noticeable,
-                planAdherence: daysAgo == 2 ? .partially : .yes
+                planAdherence: adherence
             )
         }
     }
