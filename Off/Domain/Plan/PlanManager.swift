@@ -14,7 +14,6 @@ final class PlanManager {
 
     var activePlan: PlanSnapshot?
     var error: PlanError?
-    var currentStreak: Int = 0
 
     var isPlanDay: Bool {
         guard let plan = activePlan else { return false }
@@ -107,68 +106,6 @@ final class PlanManager {
         } catch {
             self.error = .saveFailed
         }
-    }
-
-    func calculateStreak(checkIns: [CheckInSnapshot]) {
-        guard let plan = activePlan else {
-            currentStreak = 0
-            return
-        }
-
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: .now)
-        let startDate = calendar.startOfDay(for: plan.firstPlanCreatedAt)
-
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-
-        var checkInByDate: [String: CheckInSnapshot] = [:]
-        for checkIn in checkIns {
-            let key = formatter.string(from: checkIn.date)
-            checkInByDate[key] = checkIn
-        }
-
-        var streak = 0
-        var current = startDate
-
-        while current <= today {
-            let key = formatter.string(from: current)
-            let checkIn = checkInByDate[key]
-            let isPlanDay = plan.days.contains(date: current)
-            let isToday = calendar.isDateInToday(current)
-
-            if isPlanDay {
-                if let adherence = checkIn?.planAdherence {
-                    switch adherence {
-                    case .yes, .partially:
-                        streak += 1
-                    case .no:
-                        streak = 0
-                    }
-                } else if isToday {
-                    // Grace period — keep current streak
-                } else {
-                    streak = 0
-                }
-            } else {
-                if let checkIn {
-                    if let adherence = checkIn.planAdherence {
-                        switch adherence {
-                        case .yes, .partially:
-                            streak += 1
-                        case .no:
-                            break // skip, no impact
-                        }
-                    }
-                    // No adherence → skip
-                }
-                // No check-in on non-plan day → skip
-            }
-
-            current = calendar.date(byAdding: .day, value: 1, to: current) ?? today
-        }
-
-        currentStreak = streak
     }
 
 }
