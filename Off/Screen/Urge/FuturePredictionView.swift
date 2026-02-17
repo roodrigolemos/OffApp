@@ -10,47 +10,65 @@ import SwiftUI
 
 struct FuturePredictionView: View {
 
+    var onSelect: (PredictedFeeling) -> Void
+
     var body: some View {
         VStack(spacing: 24) {
             Spacer()
+            iconSection
+            promptSection
+            optionsSection
+            Spacer()
+        }
+    }
+}
 
-            // Icon
-            Image(systemName: "clock.fill")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.offAccent.opacity(0.15), .offAccent.opacity(0.05)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+// MARK: - Sections
+
+private extension FuturePredictionView {
+
+    var iconSection: some View {
+        Image(systemName: "clock.fill")
+            .font(.system(size: 48, weight: .light))
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [.offAccent.opacity(0.15), .offAccent.opacity(0.05)],
+                    startPoint: .top,
+                    endPoint: .bottom
                 )
+            )
+    }
 
-            // Prompt text
+    var promptSection: some View {
+        VStack(spacing: 24) {
             Text("If you use social media for the next 30 minutes...")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Color.offTextMuted)
                 .multilineTextAlignment(.center)
 
-            // Question
             Text("How will you feel after?")
                 .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(.offTextPrimary)
                 .multilineTextAlignment(.center)
-
-            // Options
-            VStack(spacing: 12) {
-                optionButton(emoji: "\u{1F60A}", label: "Better")
-                optionButton(emoji: "\u{1F610}", label: "Same")
-                optionButton(emoji: "\u{1F614}", label: "Worse")
-            }
-            .padding(.horizontal, 24)
-
-            Spacer()
         }
     }
 
-    private func optionButton(emoji: String, label: String) -> some View {
-        Button { } label: {
+    var optionsSection: some View {
+        VStack(spacing: 12) {
+            optionButton(emoji: "\u{1F60A}", label: "Better") { onSelect(.better) }
+            optionButton(emoji: "\u{1F610}", label: "Same") { onSelect(.same) }
+            optionButton(emoji: "\u{1F614}", label: "Worse") { onSelect(.worse) }
+        }
+        .padding(.horizontal, 24)
+    }
+}
+
+// MARK: - View Helpers
+
+private extension FuturePredictionView {
+
+    func optionButton(emoji: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 12) {
                 Text(emoji)
                     .font(.system(size: 24))
@@ -84,5 +102,6 @@ struct FuturePredictionView: View {
 }
 
 #Preview {
-    FuturePredictionView()
+    FuturePredictionView { _ in }
+        .withPreviewManagers()
 }

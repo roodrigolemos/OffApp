@@ -19,13 +19,14 @@ struct OffApp: App {
     @State private var attributeManager: AttributeManager
     @State private var planManager: PlanManager
     @State private var checkInManager: CheckInManager
+    @State private var urgeManager: UrgeManager
 
     private let container: ModelContainer
     private let config: BuildConfiguration
 
     init() {
         do {
-            let schema = Schema([AttributeScores.self, Plan.self, CheckIn.self])
+            let schema = Schema([AttributeScores.self, Plan.self, CheckIn.self, UrgeIntervention.self])
             let modelConfig = ModelConfiguration("Off.store", schema: schema)
             container = try ModelContainer(for: schema, configurations: modelConfig)
         } catch {
@@ -47,6 +48,7 @@ struct OffApp: App {
             _attributeManager = State(initialValue: AttributeManager(store: MockAttributeStore()))
             _planManager = State(initialValue: PlanManager(store: MockPlanStore()))
             _checkInManager = State(initialValue: CheckInManager(store: MockCheckInStore()))
+            _urgeManager = State(initialValue: UrgeManager(store: MockUrgeStore()))
         case .dev, .prod:
             _attributeManager = State(initialValue: AttributeManager(
                 store: SwiftDataAttributeStore(context: container.mainContext)
@@ -56,6 +58,9 @@ struct OffApp: App {
             ))
             _checkInManager = State(initialValue: CheckInManager(
                 store: SwiftDataCheckInStore(context: container.mainContext)
+            ))
+            _urgeManager = State(initialValue: UrgeManager(
+                store: SwiftDataUrgeStore(context: container.mainContext)
             ))
         }
     }
@@ -68,6 +73,7 @@ struct OffApp: App {
                 .environment(attributeManager)
                 .environment(planManager)
                 .environment(checkInManager)
+                .environment(urgeManager)
         }
     }
 }

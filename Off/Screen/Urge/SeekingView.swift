@@ -10,40 +10,57 @@ import SwiftUI
 
 struct SeekingView: View {
 
+    var onSelect: (UrgeReason) -> Void
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
                 Spacer(minLength: 40)
-
-                // Icon
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 48, weight: .light))
-                    .foregroundStyle(.offAccent.opacity(0.15))
-
-                // Question
-                Text("What are you seeking right now?")
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundStyle(.offTextPrimary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-
-                // Options
-                VStack(spacing: 12) {
-                    optionButton(emoji: "\u{1F3AF}", label: "Distraction")
-                    optionButton(emoji: "\u{1F630}", label: "Relief from anxiety")
-                    optionButton(emoji: "\u{1F91D}", label: "Connection")
-                    optionButton(emoji: "\u{1F634}", label: "Escape tiredness")
-                    optionButton(emoji: "\u{1F937}", label: "Automatic")
-                }
-                .padding(.horizontal, 24)
-
+                iconSection
+                questionSection
+                optionsSection
                 Spacer(minLength: 40)
             }
         }
     }
+}
 
-    private func optionButton(emoji: String, label: String) -> some View {
-        Button { } label: {
+// MARK: - Sections
+
+private extension SeekingView {
+
+    var iconSection: some View {
+        Image(systemName: "magnifyingglass")
+            .font(.system(size: 48, weight: .light))
+            .foregroundStyle(.offAccent.opacity(0.15))
+    }
+
+    var questionSection: some View {
+        Text("What are you seeking right now?")
+            .font(.system(size: 26, weight: .bold))
+            .foregroundStyle(.offTextPrimary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 24)
+    }
+
+    var optionsSection: some View {
+        VStack(spacing: 12) {
+            optionButton(emoji: "\u{1F3AF}", label: "Distraction") { onSelect(.distraction) }
+            optionButton(emoji: "\u{1F630}", label: "Relief from anxiety") { onSelect(.anxiety) }
+            optionButton(emoji: "\u{1F91D}", label: "Connection") { onSelect(.connection) }
+            optionButton(emoji: "\u{1F634}", label: "Escape tiredness") { onSelect(.tiredness) }
+            optionButton(emoji: "\u{1F937}", label: "Automatic") { onSelect(.automatic) }
+        }
+        .padding(.horizontal, 24)
+    }
+}
+
+// MARK: - View Helpers
+
+private extension SeekingView {
+
+    func optionButton(emoji: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 12) {
                 Text(emoji)
                     .font(.system(size: 24))
@@ -77,5 +94,6 @@ struct SeekingView: View {
 }
 
 #Preview {
-    SeekingView()
+    SeekingView { _ in }
+        .withPreviewManagers()
 }

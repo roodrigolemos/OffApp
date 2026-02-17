@@ -10,43 +10,62 @@ import SwiftUI
 
 struct MemoryCheckView: View {
 
+    let reason: UrgeReason
+    var onSelect: (MemoryOfSuccess) -> Void
+
     var body: some View {
         VStack(spacing: 24) {
             Spacer()
+            iconSection
+            promptSection
+            optionsSection
+            Spacer()
+        }
+    }
+}
 
-            // Icon
-            Image(systemName: "brain.head.profile")
-                .font(.system(size: 48, weight: .light))
-                .foregroundStyle(.offAccent.opacity(0.15))
+// MARK: - Sections
 
-            // Prompt
-            Text("Think of a time you resisted and felt good after.")
+private extension MemoryCheckView {
+
+    var iconSection: some View {
+        Image(systemName: "brain.head.profile")
+            .font(.system(size: 48, weight: .light))
+            .foregroundStyle(.offAccent.opacity(0.15))
+    }
+
+    var promptSection: some View {
+        VStack(spacing: 24) {
+            Text(reason.memoryQuestion)
                 .font(.system(size: 26, weight: .bold))
                 .foregroundStyle(.offTextPrimary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
 
-            // Subtitle
-            Text("Distraction often fades on its own.")
+            Text(reason.memorySubtitle)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(.offTextMuted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
-
-            // Options
-            VStack(spacing: 12) {
-                optionButton(emoji: "\u{1F44D}", label: "Yes, I remember")
-                optionButton(emoji: "\u{1F914}", label: "Don't remember")
-                optionButton(emoji: "\u{1F645}", label: "Never happened")
-            }
-            .padding(.horizontal, 24)
-
-            Spacer()
         }
     }
 
-    private func optionButton(emoji: String, label: String) -> some View {
-        Button { } label: {
+    var optionsSection: some View {
+        VStack(spacing: 12) {
+            optionButton(emoji: "\u{1F44D}", label: "Yes, I remember") { onSelect(.yesIRemember) }
+            optionButton(emoji: "\u{1F914}", label: "Don't remember") { onSelect(.dontRemember) }
+            optionButton(emoji: "\u{1F645}", label: "Never happened") { onSelect(.neverHappened) }
+        }
+        .padding(.horizontal, 24)
+    }
+}
+
+// MARK: - View Helpers
+
+private extension MemoryCheckView {
+
+    func optionButton(emoji: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
             HStack(spacing: 12) {
                 Text(emoji)
                     .font(.system(size: 24))
@@ -80,5 +99,6 @@ struct MemoryCheckView: View {
 }
 
 #Preview {
-    MemoryCheckView()
+    MemoryCheckView(reason: .distraction) { _ in }
+        .withPreviewManagers()
 }

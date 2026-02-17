@@ -12,6 +12,7 @@ struct HomeView: View {
     @Environment(PlanManager.self) var planManager
     @Environment(AttributeManager.self) var attributeManager
     @Environment(CheckInManager.self) var checkInManager
+    @Environment(UrgeManager.self) var urgeManager
 
     @State private var showCheckIn = false
     @State private var showUrgeIntervention = false
@@ -42,7 +43,9 @@ struct HomeView: View {
             }) {
                 CheckInView()
             }
-            .fullScreenCover(isPresented: $showUrgeIntervention) {
+            .fullScreenCover(isPresented: $showUrgeIntervention, onDismiss: {
+                urgeManager.loadInterventions()
+            }) {
                 UrgeInterventionView()
             }
             .animation(.easeInOut, value: checkInManager.hasCheckedInToday)

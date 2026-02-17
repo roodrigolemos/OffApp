@@ -20,15 +20,21 @@ struct PreviewContainer {
         manager.boot(plan: planManager.activePlan)
         return manager
     }()
+    static let urgeManager: UrgeManager = {
+        let manager = UrgeManager(store: MockUrgeStore())
+        manager.ç
+        return manager
+    }()
 }
 
 extension View {
-    
+
     func withPreviewManagers() -> some View {
         self
             .environment(PreviewContainer.appState)
             .environment(PreviewContainer.attributeManager)
             .environment(PreviewContainer.planManager)
             .environment(PreviewContainer.checkInManager)
+            .environment(PreviewContainer.urgeManager)
     }
 }
