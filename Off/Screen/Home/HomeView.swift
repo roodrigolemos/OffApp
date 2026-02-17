@@ -35,6 +35,7 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $showCheckIn, onDismiss: {
                 checkInManager.loadAll()
+                planManager.calculateStreak(checkIns: checkInManager.checkIns)
             }) {
                 CheckInView()
             }
@@ -351,7 +352,7 @@ private extension HomeView {
                 Spacer()
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("5")
+                    Text("\(planManager.currentStreak)")
                         .font(.system(size: 40, weight: .heavy))
                         .foregroundStyle(Color.offTextPrimary)
                         .tracking(-0.5)

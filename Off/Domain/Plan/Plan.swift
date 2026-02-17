@@ -9,9 +9,10 @@ import SwiftData
 @Model
 final class Plan {
 
+    var firstPlanCreatedAt: Date
+    var createdAt: Date
     var presetRawValue: String
     var selectedAppsRaw: [String]
-    var createdAt: Date
 
     var name: String
     var timeBoundaryRaw: String
@@ -27,6 +28,7 @@ final class Plan {
     var icon: String?
 
     init(from snapshot: PlanSnapshot) {
+        self.firstPlanCreatedAt = snapshot.firstPlanCreatedAt
         self.presetRawValue = snapshot.preset?.rawValue ?? ""
         self.selectedAppsRaw = snapshot.selectedApps.map(\.rawValue)
         self.createdAt = snapshot.createdAt
@@ -68,9 +70,10 @@ final class Plan {
         )
 
         return PlanSnapshot(
+            firstPlanCreatedAt: firstPlanCreatedAt,
+            createdAt: createdAt,
             preset: PlanPreset(rawValue: presetRawValue),
             selectedApps: Set(selectedAppsRaw.compactMap { SocialApp(rawValue: $0) }),
-            createdAt: createdAt,
             name: name,
             icon: icon,
             timeBoundary: TimeBoundary(rawValue: timeBoundaryRaw) ?? .anytime,

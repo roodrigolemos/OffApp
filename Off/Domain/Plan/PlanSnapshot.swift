@@ -7,9 +7,10 @@ import Foundation
 
 struct PlanSnapshot: Equatable {
 
+    let firstPlanCreatedAt: Date
+    let createdAt: Date
     let preset: PlanPreset?
     let selectedApps: Set<SocialApp>
-    let createdAt: Date
     let name: String
     let icon: String?
     let timeBoundary: TimeBoundary
@@ -21,9 +22,10 @@ struct PlanSnapshot: Equatable {
 
     // Full initializer
     init(
+        firstPlanCreatedAt: Date? = nil,
+        createdAt: Date,
         preset: PlanPreset?,
         selectedApps: Set<SocialApp>,
-        createdAt: Date,
         name: String,
         icon: String? = nil,
         timeBoundary: TimeBoundary,
@@ -31,11 +33,12 @@ struct PlanSnapshot: Equatable {
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
         phoneBehavior: PhoneBehavior,
-        condition: String?
+        condition: String?,
     ) {
+        self.firstPlanCreatedAt = firstPlanCreatedAt ?? createdAt
+        self.createdAt = createdAt
         self.preset = preset
         self.selectedApps = selectedApps
-        self.createdAt = createdAt
         self.name = name
         self.icon = icon
         self.timeBoundary = timeBoundary
@@ -47,10 +50,11 @@ struct PlanSnapshot: Equatable {
     }
 
     // Convenience: create from preset (resolves all computed values from it)
-    init(preset: PlanPreset, selectedApps: Set<SocialApp>, createdAt: Date) {
+    init(preset: PlanPreset, selectedApps: Set<SocialApp>, createdAt: Date, firstPlanCreatedAt: Date? = nil) {
+        self.firstPlanCreatedAt = firstPlanCreatedAt ?? createdAt
+        self.createdAt = createdAt
         self.preset = preset
         self.selectedApps = selectedApps
-        self.createdAt = createdAt
         self.name = preset.name
         self.icon = nil
         self.timeBoundary = preset.timeBoundary

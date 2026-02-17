@@ -27,12 +27,18 @@ struct AppView: View {
             }
         )
         .task { bootstrap() }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                planManager.calculateStreak(checkIns: checkInManager.checkIns)
+            }
+        }
     }
 
     private func bootstrap() {
         planManager.loadPlan()
         attributeManager.loadScores()
         checkInManager.loadAll()
+        planManager.calculateStreak(checkIns: checkInManager.checkIns)
     }
 }
 

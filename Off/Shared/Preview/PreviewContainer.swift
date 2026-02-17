@@ -15,7 +15,11 @@ struct PreviewContainer {
         manager.loadPlan()
         return manager
     }()
-    static let checkInManager = CheckInManager(store: MockCheckInStore())
+    static let checkInManager: CheckInManager = {
+        let manager = CheckInManager(store: MockCheckInStore())
+        manager.loadAll()
+        return manager
+    }()
 }
 
 extension View {

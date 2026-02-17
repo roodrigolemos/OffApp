@@ -35,7 +35,6 @@ final class CheckInManager {
     func save(_ snapshot: CheckInSnapshot) {
         do {
             try store.save(snapshot)
-            loadAll()
             error = nil
         } catch {
             self.error = .saveFailed

@@ -37,7 +37,7 @@ struct PlanDetailsView: View {
                     Button {
                         showPlanSelection = true
                     } label: {
-                        Image(systemName: "pencil")
+                        Image(systemName: "arrow.triangle.2.circlepath")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Color.offAccent)
                     }

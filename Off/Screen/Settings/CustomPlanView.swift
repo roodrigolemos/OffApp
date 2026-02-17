@@ -620,7 +620,7 @@ private extension CustomPlanView {
 
         let trimmedCondition = condition.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        planManager.createCustomPlan(
+        planManager.changePlan(
             name: planName,
             icon: selectedIcon,
             selectedApps: selectedApps,
