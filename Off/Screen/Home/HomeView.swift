@@ -14,6 +14,7 @@ struct HomeView: View {
     @Environment(CheckInManager.self) var checkInManager
 
     @State private var showCheckIn = false
+    @State private var showUrgeIntervention = false
     @State private var isPlanCardFlipped = false
 
     var body: some View {
@@ -40,10 +41,13 @@ struct HomeView: View {
             }) {
                 CheckInView()
             }
+            .fullScreenCover(isPresented: $showUrgeIntervention) {
+                UrgeInterventionView()
+            }
             .animation(.easeInOut, value: checkInManager.hasCheckedInToday)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { } label: {
+                    Button { showUrgeIntervention = true } label: {
                         Image(systemName: "hand.raised.fill")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(Color.offAccent)

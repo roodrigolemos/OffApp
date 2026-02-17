@@ -9,6 +9,8 @@
 import SwiftUI
 
 struct UrgeInterventionView: View {
+    
+    @Environment(\.dismiss) var dismiss
 
     var body: some View {
         ZStack {
@@ -42,7 +44,7 @@ struct UrgeInterventionView: View {
 
                     Spacer()
 
-                    Button { } label: {
+                    Button { dismiss() } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 12, weight: .bold))
                             .foregroundStyle(.offTextSecondary)
