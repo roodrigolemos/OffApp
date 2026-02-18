@@ -2,40 +2,69 @@
 //  WeeklyInsightDetailView.swift
 //  Off
 //
-//  Created by Rodrigo Lemos on 11/02/26.
-//
 
 
 import SwiftUI
 
 struct WeeklyInsightDetailView: View {
 
+    @Environment(InsightManager.self) var insightManager
+    @Environment(PlanManager.self) var planManager
+    @Environment(CheckInManager.self) var checkInManager
+    @Environment(UrgeManager.self) var urgeManager
+    @Environment(\.dismiss) var dismiss
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
                 titleSection
                 headerSection
-                whatsHappeningSection
-                whyThisHappensSection
-                whatToExpectSection
-                patternSection
+
+                if insightManager.isGenerating {
+                    loadingSection
+                } else if insightManager.error == .insufficientData {
+                    insufficientDataSection
+                } else if let insight = insightManager.currentInsight {
+                    whatsHappeningSection(insight.whatsHappening)
+                    whyThisHappensSection(insight.whyThisHappens)
+                    whatToExpectSection(insight.whatToExpect)
+
+                    if let pattern = insight.patternIdentified {
+                        patternSection(pattern)
+                    }
+                }
             }
             .padding(.bottom, 40)
         }
         .background(Color.offBackgroundPrimary)
+        .task {
+            await insightManager.loadInsight(
+                plan: planManager.activePlan,
+                checkIns: checkInManager.checkIns,
+                interventions: urgeManager.interventions
+            )
+        }
     }
+}
 
-    // MARK: - Title
+#Preview {
+    WeeklyInsightDetailView()
+        .withPreviewManagers()
+}
 
-    private var titleSection: some View {
+// MARK: - Sections
+
+private extension WeeklyInsightDetailView {
+
+    var titleSection: some View {
         HStack {
-            Text("Week 3 Insight")
+            Text("Week \(insightManager.weeksSincePlanCreation(plan: planManager.activePlan)) Insight")
                 .font(.system(size: 28, weight: .heavy))
                 .foregroundStyle(Color.offTextPrimary)
 
             Spacer()
 
-            Button { } label: {
+            Button { dismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Color.offTextSecondary)
@@ -48,9 +77,7 @@ struct WeeklyInsightDetailView: View {
         .padding(.top, 16)
     }
 
-    // MARK: - Header
-
-    private var headerSection: some View {
+    var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ZStack {
@@ -69,7 +96,7 @@ struct WeeklyInsightDetailView: View {
                     .tracking(1.2)
             }
 
-            Text("Monday, January 20")
+            Text(headerDateText)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Color.offTextSecondary)
         }
@@ -77,57 +104,82 @@ struct WeeklyInsightDetailView: View {
         .padding(.top, 8)
     }
 
-    // MARK: - What's Happening
+    var loadingSection: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .controlSize(.large)
+                .tint(Color.offAccent)
 
-    private var whatsHappeningSection: some View {
+            Text("Generating your insight...")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.offTextSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 60)
+    }
+
+    var insufficientDataSection: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "chart.bar.xaxis")
+                .font(.system(size: 32, weight: .medium))
+                .foregroundStyle(Color.offTextMuted)
+
+            Text("Not enough data yet")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(Color.offTextPrimary)
+
+            Text("You need at least 3 check-ins from last week to generate an insight.")
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(Color.offTextSecondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 40)
+    }
+
+    func whatsHappeningSection(_ content: String) -> some View {
         insightSection(
             icon: "eye.fill",
             title: "What's Happening",
-            content: "Your focus improved noticeably this week, especially on days when you followed the evening wind-down plan. Energy levels were more consistent, though control still fluctuates.",
+            content: content,
             accentColor: Color.offAccent
         )
         .padding(.horizontal, 24)
     }
 
-    // MARK: - Why This Happens
-
-    private var whyThisHappensSection: some View {
+    func whyThisHappensSection(_ content: String) -> some View {
         insightSection(
             icon: "brain.head.profile",
             title: "Why This Happens",
-            content: "When you reduce evening screen time, your brain gets more restorative rest. This compounds over days, making sustained attention easier and reducing the 'mental fog' feeling.",
+            content: content,
             accentColor: Color(red: 0.6, green: 0.4, blue: 0.8)
         )
         .padding(.horizontal, 24)
     }
 
-    // MARK: - What to Expect
-
-    private var whatToExpectSection: some View {
+    func whatToExpectSection(_ content: String) -> some View {
         insightSection(
             icon: "arrow.forward.circle.fill",
             title: "What to Expect",
-            content: "If you maintain this pattern, expect clarity and focus to stabilize further. Control tends to improve last — it requires the deepest neural adaptation.",
+            content: content,
             accentColor: Color(red: 0.3, green: 0.7, blue: 0.5)
         )
         .padding(.horizontal, 24)
     }
 
-    // MARK: - Pattern Identified
-
-    private var patternSection: some View {
+    func patternSection(_ content: String) -> some View {
         insightSection(
             icon: "waveform.path.ecg",
             title: "Pattern Identified",
-            content: "Your check-ins show better scores on days after you followed your plan the night before. The evening routine is your strongest lever right now.",
+            content: content,
             accentColor: Color(red: 0.9, green: 0.6, blue: 0.3)
         )
         .padding(.horizontal, 24)
     }
 
-    // MARK: - Insight Section
-
-    private func insightSection(
+    func insightSection(
         icon: String,
         title: String,
         content: String,
@@ -170,4 +222,14 @@ struct WeeklyInsightDetailView: View {
     }
 }
 
-#Preview { WeeklyInsightDetailView() }
+// MARK: - Helpers
+
+private extension WeeklyInsightDetailView {
+
+    var headerDateText: String {
+        if let insight = insightManager.currentInsight {
+            return insight.generatedAt.formatted(.dateTime.weekday(.wide).month(.wide).day())
+        }
+        return Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day())
+    }
+}

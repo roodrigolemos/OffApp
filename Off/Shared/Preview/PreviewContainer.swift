@@ -22,9 +22,10 @@ struct PreviewContainer {
     }()
     static let urgeManager: UrgeManager = {
         let manager = UrgeManager(store: MockUrgeStore())
-        manager.ç
+        manager.loadInterventions()
         return manager
     }()
+    static let insightManager = InsightManager(store: MockInsightStore(), aiService: MockAIService())
 }
 
 extension View {
@@ -36,5 +37,6 @@ extension View {
             .environment(PreviewContainer.planManager)
             .environment(PreviewContainer.checkInManager)
             .environment(PreviewContainer.urgeManager)
+            .environment(PreviewContainer.insightManager)
     }
 }

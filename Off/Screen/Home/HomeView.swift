@@ -13,9 +13,11 @@ struct HomeView: View {
     @Environment(AttributeManager.self) var attributeManager
     @Environment(CheckInManager.self) var checkInManager
     @Environment(UrgeManager.self) var urgeManager
+    @Environment(InsightManager.self) var insightManager
 
     @State private var showCheckIn = false
     @State private var showUrgeIntervention = false
+    @State private var showWeeklyInsight = false
     @State private var isPlanCardFlipped = false
 
     var body: some View {
@@ -47,6 +49,17 @@ struct HomeView: View {
                 urgeManager.loadInterventions()
             }) {
                 UrgeInterventionView()
+            }
+            .sheet(isPresented: $showWeeklyInsight, onDismiss: {
+                insightManager.markAsViewed()
+            }) {
+                WeeklyInsightDetailView()
+            }
+            .task {
+                insightManager.checkWeeklyInsightAvailability(
+                    plan: planManager.activePlan,
+                    checkIns: checkInManager.checkIns
+                )
             }
             .animation(.easeInOut, value: checkInManager.hasCheckedInToday)
             .toolbar {
@@ -513,7 +526,52 @@ private extension HomeView {
     }
 
     var weekInsightCard: some View {
-        Button { } label: {
+        Group {
+            switch insightManager.weeklyInsightState {
+            case .notYetAvailable:
+                insightCardContent(
+                    iconName: "sparkles",
+                    iconColor: Color.offTextMuted,
+                    title: "First insight coming Monday",
+                    subtitle: "Keep checking in this week",
+                    showArrow: false,
+                    tappable: false
+                )
+
+            case .ready:
+                insightCardContent(
+                    iconName: "sparkles",
+                    iconColor: Color.offAccent,
+                    title: "Your weekly insight is ready",
+                    subtitle: "Tap to view your week summary",
+                    showArrow: true,
+                    tappable: true
+                )
+
+            case .viewed:
+                insightCardContent(
+                    iconName: "checkmark.circle.fill",
+                    iconColor: Color.offSuccess,
+                    title: "See you next Monday",
+                    subtitle: "Tap to view again",
+                    showArrow: true,
+                    tappable: true
+                )
+            }
+        }
+    }
+
+    func insightCardContent(
+        iconName: String,
+        iconColor: Color,
+        title: String,
+        subtitle: String,
+        showArrow: Bool,
+        tappable: Bool
+    ) -> some View {
+        Button {
+            if tappable { showWeeklyInsight = true }
+        } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
                     .fill(Color.offBackgroundSecondary)
@@ -522,9 +580,9 @@ private extension HomeView {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.offAccentSoft.opacity(0.15),
+                                iconColor.opacity(0.15),
                                 Color.clear,
-                                Color.offAccent.opacity(0.03)
+                                iconColor.opacity(0.03)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -536,27 +594,27 @@ private extension HomeView {
                         HStack(spacing: 8) {
                             ZStack {
                                 Circle()
-                                    .fill(Color.offAccent.opacity(0.12))
+                                    .fill(iconColor.opacity(0.12))
                                     .frame(width: 28, height: 28)
 
-                                Image(systemName: "sparkles")
+                                Image(systemName: iconName)
                                     .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(Color.offAccent)
+                                    .foregroundStyle(iconColor)
                             }
 
                             Text("INSIGHT")
                                 .font(.system(size: 11, weight: .heavy))
-                                .foregroundStyle(Color.offAccent)
+                                .foregroundStyle(iconColor)
                                 .tracking(1.4)
                         }
 
-                        Text("Your weekly insight is ready")
+                        Text(title)
                             .font(.system(size: 17, weight: .bold))
                             .foregroundStyle(Color.offTextPrimary)
                             .lineLimit(2)
                             .lineSpacing(2)
 
-                        Text("Tap to view your week summary")
+                        Text(subtitle)
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(Color.offTextSecondary)
                             .tracking(0.2)
@@ -564,14 +622,16 @@ private extension HomeView {
 
                     Spacer(minLength: 16)
 
-                    ZStack {
-                        Circle()
-                            .fill(Color.offAccent.opacity(0.08))
-                            .frame(width: 44, height: 44)
+                    if showArrow {
+                        ZStack {
+                            Circle()
+                                .fill(iconColor.opacity(0.08))
+                                .frame(width: 44, height: 44)
 
-                        Image(systemName: "arrow.up.forward")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(Color.offAccent)
+                            Image(systemName: "arrow.up.forward")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(iconColor)
+                        }
                     }
                 }
                 .padding(24)
@@ -583,6 +643,7 @@ private extension HomeView {
             .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
         }
         .buttonStyle(.plain)
+        .disabled(!tappable)
     }
 
     func dayDot(label: String, state: DayAdherenceState) -> some View {

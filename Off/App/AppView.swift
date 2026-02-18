@@ -15,6 +15,7 @@ struct AppView: View {
     @Environment(PlanManager.self) var planManager
     @Environment(AttributeManager.self) var attributeManager
     @Environment(CheckInManager.self) var checkInManager
+    @Environment(InsightManager.self) var insightManager
 
     var body: some View {
         AppViewBuilder(
@@ -31,6 +32,10 @@ struct AppView: View {
             if newPhase == .active {
                 checkInManager.calculateStreak(plan: planManager.activePlan)
                 checkInManager.calculateWeekDays(plan: planManager.activePlan)
+                insightManager.checkWeeklyInsightAvailability(
+                    plan: planManager.activePlan,
+                    checkIns: checkInManager.checkIns
+                )
             }
         }
     }
@@ -39,6 +44,10 @@ struct AppView: View {
         planManager.loadPlan()
         attributeManager.loadScores()
         checkInManager.boot(plan: planManager.activePlan)
+        insightManager.checkWeeklyInsightAvailability(
+            plan: planManager.activePlan,
+            checkIns: checkInManager.checkIns
+        )
     }
 }
 
