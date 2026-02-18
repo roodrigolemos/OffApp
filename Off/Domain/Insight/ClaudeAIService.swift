@@ -3,14 +3,22 @@
 //  Off
 //
 
+import FirebaseFunctions
 import Foundation
 
 @MainActor
 final class ClaudeAIService: AIService {
 
-    private let apiKey = "your-api-key-here"
+    private var apiKey: String?
 
     func generateWeeklyInsight(data: WeeklyInsightData) async throws -> AIInsightResponse {
+
+        if apiKey == nil {
+            try await fetchApiKey()
+        }
+        guard let apiKey else {
+            throw InsightError.generationFailed
+        }
 
         let url = URL(string: "https://api.anthropic.com/v1/messages")!
 
@@ -54,6 +62,15 @@ final class ClaudeAIService: AIService {
         }
 
         return try parseResponse(responseData)
+    }
+
+    private func fetchApiKey() async throws {
+        let result = try await Functions.functions().httpsCallable("getApiKey").call()
+        guard let data = result.data as? [String: Any],
+              let key = data["apiKey"] as? String else {
+            throw InsightError.generationFailed
+        }
+        apiKey = key
     }
 
     private func parseResponse(_ data: Data) throws -> AIInsightResponse {

@@ -50,3 +50,13 @@ xcschemes/
 *.swp
 *.swo
 .DS_Store
+
+
+# Firebase ###
+.idea
+**/node_modules/*
+**/.firebaserc
+### Firebase Patch ###
+.runtimeconfig.json
+.firebase/
+functions/.env
