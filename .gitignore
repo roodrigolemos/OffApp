@@ -60,3 +60,5 @@ xcschemes/
 .runtimeconfig.json
 .firebase/
 functions/.env
+
+GoogleService-Info.plist
