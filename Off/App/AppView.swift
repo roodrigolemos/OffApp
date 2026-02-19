@@ -33,8 +33,14 @@ struct AppView: View {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
+                checkInManager.loadCheckIns()
                 checkInManager.calculateStreak(plan: planManager.activePlan)
                 checkInManager.calculateWeekDays(plan: planManager.activePlan)
+                checkInManager.calculateWeekDayCards()
+                attributeManager.runWeeklyEvolutionIfNeeded(
+                    plan: planManager.activePlan,
+                    checkIns: checkInManager.checkIns
+                )
                 insightManager.checkWeeklyInsightAvailability(
                     plan: planManager.activePlan,
                     checkIns: checkInManager.checkIns
@@ -47,6 +53,10 @@ struct AppView: View {
         planManager.loadPlan()
         attributeManager.loadScores()
         checkInManager.boot(plan: planManager.activePlan)
+        attributeManager.runWeeklyEvolutionIfNeeded(
+            plan: planManager.activePlan,
+            checkIns: checkInManager.checkIns
+        )
         insightManager.checkWeeklyInsightAvailability(
             plan: planManager.activePlan,
             checkIns: checkInManager.checkIns

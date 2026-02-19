@@ -9,22 +9,31 @@ import SwiftUI
 struct PreviewContainer {
     
     static let appState = AppState()
-    static let attributeManager = AttributeManager(store: MockAttributeStore())
+    
+    static let attributeManager: AttributeManager = {
+        let manager = AttributeManager(store: MockAttributeStore())
+        manager.loadScores()
+        return manager
+    }()
+    
     static let planManager: PlanManager = {
         let manager = PlanManager(store: MockPlanStore())
         manager.loadPlan()
         return manager
     }()
+    
     static let checkInManager: CheckInManager = {
         let manager = CheckInManager(store: MockCheckInStore())
         manager.boot(plan: planManager.activePlan)
         return manager
     }()
+    
     static let urgeManager: UrgeManager = {
         let manager = UrgeManager(store: MockUrgeStore())
         manager.loadInterventions()
         return manager
     }()
+    
     static let insightManager = InsightManager(store: MockInsightStore(), aiService: MockAIService())
 }
 

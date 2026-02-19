@@ -10,6 +10,8 @@ import Charts
 
 struct ProgresssView: View {
 
+    @Environment(AttributeManager.self) var attributeManager
+
     @State private var showArchive: Bool = false
     @State private var isUsageExpanded: Bool = false
     @State private var selectedMonthIndex: Int = 0
@@ -45,8 +47,6 @@ struct ProgresssView: View {
 
 private extension ProgresssView {
 
-    // MARK: - Header
-
     var headerSection: some View {
         Text("Progress")
             .font(.system(size: 38, weight: .heavy))
@@ -57,8 +57,6 @@ private extension ProgresssView {
             .padding(.top, 16)
             .padding(.bottom, 20)
     }
-
-    // MARK: - Attribute Trends
 
     var attributeTrendsSection: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -73,22 +71,99 @@ private extension ProgresssView {
         .padding(.bottom, 36)
     }
 
+    var planAdherenceSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("PLAN ADHERENCE")
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundStyle(Color.offTextMuted)
+                .tracking(1.6)
+
+            adherenceCalendarCard
+            streakCardsRow
+            adherenceInsightCard
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 36)
+    }
+
+    var urgePatternSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("URGE PATTERNS")
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundStyle(Color.offTextMuted)
+                .tracking(1.6)
+
+            urgePatternCard
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 36)
+    }
+
+    var weeklyFeedbackSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("FEEDBACKS")
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundStyle(Color.offTextMuted)
+                .tracking(1.6)
+
+            weeklyFeedbackCard
+            if showArchive {
+                weeklyFeedbackArchive
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 36)
+    }
+
+    var checkInHistorySection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("PREVIOUS WEEKS")
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundStyle(Color.offTextMuted)
+                .tracking(1.6)
+
+            previousWeeksStack
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 36)
+    }
+
+    var usageDataSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            usageDataHeader
+
+            if isUsageExpanded {
+                usageDataContent
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 32)
+    }
+}
+
+// MARK: - Helper Views
+
+private extension ProgresssView {
+
     var trendChartsGrid: some View {
-        LazyVGrid(columns: [
+        let scores = attributeManager.scores
+
+        return LazyVGrid(columns: [
             GridItem(.flexible(), spacing: 14),
             GridItem(.flexible(), spacing: 14)
         ], spacing: 14) {
-            trendChartCard(icon: "brain", name: "Clarity", currentScore: 4, delta: "+2")
-            trendChartCard(icon: "scope", name: "Focus", currentScore: 4, delta: "+1")
-            trendChartCard(icon: "bolt.fill", name: "Energy", currentScore: 4, delta: "+2")
-            trendChartCard(icon: "flag.fill", name: "Purpose", currentScore: 4, delta: "+1")
-            trendChartCard(icon: "hand.raised.fill", name: "Control", currentScore: 2, delta: "-1")
-            trendChartCard(icon: "hourglass", name: "Patience", currentScore: 4, delta: "+1")
+            ForEach(Attribute.allCases, id: \.self) { attribute in
+                trendChartCard(
+                    attribute: attribute,
+                    currentScore: scores?.scores[attribute] ?? 3.0,
+                    momentum: scores?.momentum[attribute] ?? false
+                )
+            }
         }
     }
 
-    func trendChartCard(icon: String, name: String, currentScore: Int, delta: String) -> some View {
-        let description = levelDescription(for: name, score: currentScore)
+    func trendChartCard(attribute: Attribute, currentScore: Double, momentum: Bool) -> some View {
+        let description = levelDescription(for: attribute, score: currentScore)
 
         return ZStack {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -101,27 +176,34 @@ private extension ProgresssView {
                             .fill(Color.offAccent.opacity(0.12))
                             .frame(width: 36, height: 36)
 
-                        Image(systemName: icon)
+                        Image(systemName: attribute.icon)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(Color.offAccent)
                     }
 
                     Spacer()
 
-                    trendArrow(for: delta)
+                    if momentum {
+                        Text("Momentum")
+                            .font(.system(size: 10, weight: .heavy))
+                            .foregroundStyle(Color.offAccent)
+                            .tracking(0.4)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                Capsule(style: .continuous)
+                                    .fill(Color.offAccent.opacity(0.12))
+                            )
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(name)
+                    Text(attribute.label)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.offTextPrimary)
 
                     HStack(spacing: 4) {
-                        ForEach(0..<5, id: \.self) { index in
-                            Circle()
-                                .fill(index < currentScore ? Color.offAccent : Color.offStroke.opacity(0.3))
-                                .frame(width: 8, height: 8)
-                        }
+                        scoreDots(score: currentScore)
                     }
 
                     Text(description)
@@ -137,32 +219,6 @@ private extension ProgresssView {
                 .stroke(Color.offStroke, lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
-    }
-
-    func trendArrow(for delta: String) -> some View {
-        let isPositive = delta.hasPrefix("+")
-        let isNeutral = delta.hasPrefix("0") || delta == "0"
-
-        return Image(systemName: isNeutral ? "arrow.right" : (isPositive ? "arrow.up.right" : "arrow.down.right"))
-            .font(.system(size: 16, weight: .bold))
-            .foregroundStyle(isNeutral ? Color.offTextMuted : (isPositive ? Color.offSuccess : Color.offWarn))
-    }
-
-    // MARK: - Plan Adherence
-
-    var planAdherenceSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("PLAN ADHERENCE")
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(Color.offTextMuted)
-                .tracking(1.6)
-
-            adherenceCalendarCard
-            streakCardsRow
-            adherenceInsightCard
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 36)
     }
 
     var adherenceCalendarCard: some View {
@@ -517,21 +573,6 @@ private extension ProgresssView {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
-    // MARK: - Urge Patterns
-
-    var urgePatternSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("URGE PATTERNS")
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(Color.offTextMuted)
-                .tracking(1.6)
-
-            urgePatternCard
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 36)
-    }
-
     var urgePatternCard: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -621,24 +662,6 @@ private extension ProgresssView {
         }
         .padding(.vertical, 8)
         .frame(height: 140)
-    }
-
-    // MARK: - Weekly Feedback
-
-    var weeklyFeedbackSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("FEEDBACKS")
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(Color.offTextMuted)
-                .tracking(1.6)
-
-            weeklyFeedbackCard
-            if showArchive {
-                weeklyFeedbackArchive
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 36)
     }
 
     var weeklyFeedbackCard: some View {
@@ -746,21 +769,6 @@ private extension ProgresssView {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
-    // MARK: - Check-in History (Previous Weeks)
-
-    var checkInHistorySection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("PREVIOUS WEEKS")
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(Color.offTextMuted)
-                .tracking(1.6)
-
-            previousWeeksStack
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 36)
-    }
-
     var previousWeeksStack: some View {
         VStack(spacing: 12) {
             previousWeekRow(dateRange: "Jan 13 – Jan 19", checkIns: "5/7 check-ins")
@@ -799,20 +807,6 @@ private extension ProgresssView {
                 .stroke(Color.offStroke, lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
-    }
-
-    // MARK: - Usage Data
-
-    var usageDataSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            usageDataHeader
-
-            if isUsageExpanded {
-                usageDataContent
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 32)
     }
 
     var usageDataHeader: some View {
@@ -976,48 +970,79 @@ private extension ProgresssView {
     }
 }
 
-// MARK: - Helper Functions
+// MARK: - Helpers
 
 private extension ProgresssView {
 
-    func levelDescription(for attribute: String, score: Int) -> String {
-        let descriptions: [String: [String]] = [
-            "Clarity": [
+    func scoreDots(score: Double) -> some View {
+        let normalized = max(1.0, min(5.0, score))
+        let fullDots = Int(normalized.rounded(.down))
+        let hasHalfDot = (normalized - Double(fullDots)) >= 0.5
+
+        return HStack(spacing: 4) {
+            ForEach(0..<5, id: \.self) { index in
+                let fill: Double = if index < fullDots {
+                    1.0
+                } else if index == fullDots && hasHalfDot {
+                    0.5
+                } else {
+                    0.0
+                }
+
+                Circle()
+                    .fill(Color.offStroke.opacity(0.3))
+                    .frame(width: 8, height: 8)
+                    .overlay(alignment: .leading) {
+                        Circle()
+                            .fill(Color.offAccent)
+                            .frame(width: 8, height: 8)
+                            .mask(
+                                Rectangle()
+                                    .frame(width: 8 * fill, height: 8, alignment: .leading)
+                            )
+                    }
+            }
+        }
+    }
+
+    func levelDescription(for attribute: Attribute, score: Double) -> String {
+        let descriptions: [Attribute: [String]] = [
+            .clarity: [
                 "Overwhelmed, foggy mind",
                 "Glimpses of clarity",
                 "Noticeably clearer thinking",
                 "Clear, focused thinking",
                 "Effortless mental clarity"
             ],
-            "Focus": [
+            .focus: [
                 "Scattered, fleeting attention",
                 "Brief focus bursts",
                 "Improving sustained attention",
                 "Deep concentration ability",
                 "Natural flow state"
             ],
-            "Energy": [
+            .energy: [
                 "Drained, exhausted constantly",
                 "Slightly more energy",
                 "Stable energy levels",
                 "Consistent daily vitality",
                 "Energized and present"
             ],
-            "Purpose": [
+            .drive: [
                 "Lost, disconnected",
                 "Fleeting direction glimpses",
                 "Developing clearer path",
                 "Connected to goals",
                 "Strong, unwavering purpose"
             ],
-            "Control": [
+            .control: [
                 "Powerless against urges",
                 "Inconsistent self-control",
                 "Growing urge control",
                 "Solid impulse management",
                 "Full intentional control"
             ],
-            "Patience": [
+            .patience: [
                 "Zero stillness tolerance",
                 "Noticing boredom reactivity",
                 "Building stillness tolerance",
@@ -1026,11 +1051,12 @@ private extension ProgresssView {
             ]
         ]
 
-        guard let levels = descriptions[attribute], score >= 1 && score <= 5 else {
+        let index = Int(max(1.0, min(5.0, score)).rounded(.up)) - 1
+        guard let levels = descriptions[attribute], levels.indices.contains(index) else {
             return ""
         }
 
-        return levels[score - 1]
+        return levels[index]
     }
 
     func adherenceColor(for status: Int) -> Color {
@@ -1105,11 +1131,6 @@ private extension ProgresssView {
     func calculateStreakInfo() -> (currentStreak: Int, bestAllTime: Int) {
         (calculateCurrentStreak(), calculateBestAllTimeStreak())
     }
-}
-
-// MARK: - Hardcoded Data
-
-private extension ProgresssView {
 
     var availableMonths: [MonthData] {
         [
