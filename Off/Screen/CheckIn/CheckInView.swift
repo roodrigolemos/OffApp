@@ -83,7 +83,7 @@ private extension CheckInView {
                 .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(Color.offTextPrimary)
 
-            Text("Answer based on how you feel today, since you started reducing social media.")
+            Text(checkInReferenceSubtitle)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(Color.offTextSecondary)
                 .lineSpacing(3)
@@ -323,6 +323,13 @@ private extension CheckInView {
 
     var isPlanDay: Bool {
         planManager.isPlanDay
+    }
+
+    var checkInReferenceSubtitle: String {
+        if planManager.hasCompletedFirstWeeklyCycle {
+            return "Answer based on how you feel today, compared to last week."
+        }
+        return "Answer based on how you feel today, since you started reducing social media."
     }
 
     var allAnswered: Bool {

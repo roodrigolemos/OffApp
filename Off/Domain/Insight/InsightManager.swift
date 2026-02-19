@@ -76,7 +76,7 @@ final class InsightManager {
             return day >= lastMonday && day <= lastSunday
         }
 
-        guard lastWeekCheckIns.count >= 3 else {
+        guard lastWeekCheckIns.count >= 4 else {
             error = .insufficientData
             return
         }

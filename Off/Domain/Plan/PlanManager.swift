@@ -20,6 +20,21 @@ final class PlanManager {
         return plan.days.contains(date: .now)
     }
 
+    var hasCompletedFirstWeeklyCycle: Bool {
+        guard let plan = activePlan else { return false }
+
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday
+
+        let today = calendar.startOfDay(for: .now)
+        guard let thisWeekMonday = calendar.dateInterval(of: .weekOfYear, for: today)?.start else {
+            return false
+        }
+
+        let planStart = calendar.startOfDay(for: plan.firstPlanCreatedAt)
+        return planStart < thisWeekMonday
+    }
+
     init(store: PlanStore) {
         self.store = store
     }
