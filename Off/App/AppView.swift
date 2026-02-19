@@ -27,7 +27,10 @@ struct AppView: View {
                 OnboardingView()
             }
         )
-        .task { bootstrap() }
+        .task(id: appState.showTabBar) {
+            guard appState.showTabBar else { return }
+            bootstrap()
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 checkInManager.calculateStreak(plan: planManager.activePlan)
