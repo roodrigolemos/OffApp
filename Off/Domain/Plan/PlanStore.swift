@@ -9,6 +9,7 @@ import SwiftData
 @MainActor
 protocol PlanStore {
     func fetchActivePlan() throws -> PlanSnapshot?
+    func fetchAllPlans() throws -> [PlanSnapshot]
     func save(_ snapshot: PlanSnapshot) throws
 }
 
@@ -27,6 +28,14 @@ final class SwiftDataPlanStore: PlanStore {
         )
         let models = try context.fetch(descriptor)
         return models.first?.toSnapshot()
+    }
+
+    func fetchAllPlans() throws -> [PlanSnapshot] {
+        let descriptor = FetchDescriptor<Plan>(
+            sortBy: [SortDescriptor(\.createdAt, order: .forward)]
+        )
+        let models = try context.fetch(descriptor)
+        return models.map { $0.toSnapshot() }
     }
 
     func save(_ snapshot: PlanSnapshot) throws {

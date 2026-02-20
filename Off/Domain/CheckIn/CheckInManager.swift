@@ -6,6 +6,17 @@
 import Foundation
 import Observation
 
+struct PlanHistoryEntry: Equatable {
+    let startDate: Date
+    let committedDays: DaysOfWeek
+}
+
+struct AdherenceStreakMetrics: Equatable {
+    let current: Int
+    let bestEver: Int
+    let totalDaysFollowed: Int
+}
+
 @MainActor
 @Observable
 final class CheckInManager {
@@ -26,10 +37,10 @@ final class CheckInManager {
         self.store = store
     }
 
-    func boot(plan: PlanSnapshot?) {
+    func boot(plan: PlanSnapshot?, planHistory: [PlanSnapshot] = []) {
         loadCheckIns()
-        calculateStreak(plan: plan)
-        calculateWeekDays(plan: plan)
+        calculateStreak(plan: plan, planHistory: planHistory)
+        calculateWeekDays(plan: plan, planHistory: planHistory)
         calculateWeekDayCards()
     }
 
@@ -51,7 +62,7 @@ final class CheckInManager {
         }
     }
 
-    func calculateWeekDays(plan: PlanSnapshot?) {
+    func calculateWeekDays(plan: PlanSnapshot?, planHistory: [PlanSnapshot] = []) {
         var calendar = Calendar.current
         calendar.firstWeekday = 2 // Monday
 
@@ -59,54 +70,40 @@ final class CheckInManager {
         guard let monday = calendar.dateInterval(of: .weekOfYear, for: today)?.start else { return }
 
         let labels = ["M", "T", "W", "T", "F", "S", "S"]
-
-        let checkInsByDate: [String: CheckInSnapshot] = {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd"
-            var dict: [String: CheckInSnapshot] = [:]
-            for checkIn in checkIns {
-                dict[formatter.string(from: checkIn.date)] = checkIn
-            }
-            return dict
-        }()
-
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
+        let history = AdherenceTimeline.history(from: planHistory, fallbackPlan: plan, calendar: calendar)
+        let checkInsByDate = AdherenceTimeline.checkInsByDay(checkIns, calendar: calendar)
 
         var result: [WeekDayState] = []
 
         for i in 0..<7 {
             guard let day = calendar.date(byAdding: .day, value: i, to: monday) else { continue }
             let dayStart = calendar.startOfDay(for: day)
-            let key = formatter.string(from: day)
 
             let state: DayAdherenceState
 
-            guard let plan else {
-                state = .restDay
-                result.append(WeekDayState(id: i, label: labels[i], state: state))
-                continue
-            }
-
-            let isPlanDay = plan.days.contains(date: day)
-
-            if !isPlanDay {
-                state = .restDay
-            } else if dayStart < calendar.startOfDay(for: plan.firstPlanCreatedAt) {
-                state = .restDay
-            } else if let checkIn = checkInsByDate[key] {
-                switch checkIn.planAdherence {
-                case .yes: state = .followed
-                case .partially: state = .partially
-                case .no: state = .notFollowed
-                case nil: state = .followed
-                }
-            } else if dayStart > today {
+            if dayStart > today {
                 state = .upcoming
+            } else if let checkIn = checkInsByDate[dayStart] {
+                if checkIn.wasPlanDay {
+                    switch checkIn.planAdherence {
+                    case .yes: state = .followed
+                    case .partially: state = .partially
+                    case .no, nil: state = .notFollowed
+                    }
+                } else {
+                    switch checkIn.planAdherence {
+                    case .yes: state = .followed
+                    case .partially: state = .partially
+                    case .no, nil: state = .restDay
+                    }
+                }
+            } else if let committedDays = AdherenceTimeline.committedDays(on: dayStart, history: history, calendar: calendar),
+                      committedDays.contains(date: dayStart) {
+                state = dayStart == today ? .pending : .missed
             } else if dayStart == today {
                 state = .pending
             } else {
-                state = .missed
+                state = .restDay
             }
 
             result.append(WeekDayState(id: i, label: labels[i], state: state))
@@ -154,65 +151,91 @@ final class CheckInManager {
         weekDayCards = result
     }
 
-    func calculateStreak(plan: PlanSnapshot?) {
-        guard let plan else {
-            currentStreak = 0
-            return
+    func calculateStreak(plan: PlanSnapshot?, planHistory: [PlanSnapshot] = []) {
+        let metrics = streakMetrics(plan: plan, planHistory: planHistory)
+        currentStreak = metrics.current
+    }
+
+    func streakMetrics(plan: PlanSnapshot?, planHistory: [PlanSnapshot] = []) -> AdherenceStreakMetrics {
+        let history = AdherenceTimeline.history(from: planHistory, fallbackPlan: plan, calendar: .current)
+        return AdherenceTimeline.streakMetrics(checkIns: checkIns, history: history, calendar: .current, now: .now)
+    }
+}
+
+private enum AdherenceTimeline {
+
+    static func history(from plans: [PlanSnapshot], fallbackPlan: PlanSnapshot?, calendar: Calendar) -> [PlanHistoryEntry] {
+        let sourcePlans = plans.isEmpty ? (fallbackPlan.map { [$0] } ?? []) : plans
+        let sorted = sourcePlans.sorted { $0.createdAt < $1.createdAt }
+        var byStartDay: [Date: PlanHistoryEntry] = [:]
+
+        for plan in sorted {
+            let day = calendar.startOfDay(for: plan.createdAt)
+            byStartDay[day] = PlanHistoryEntry(startDate: day, committedDays: plan.days)
         }
 
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: .now)
-        let startDate = calendar.startOfDay(for: plan.firstPlanCreatedAt)
+        return byStartDay.values.sorted { $0.startDate < $1.startDate }
+    }
 
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
+    static func committedDays(on date: Date, history: [PlanHistoryEntry], calendar: Calendar) -> DaysOfWeek? {
+        let day = calendar.startOfDay(for: date)
+        return history.last(where: { $0.startDate <= day })?.committedDays
+    }
 
-        var checkInByDate: [String: CheckInSnapshot] = [:]
+    static func checkInsByDay(_ checkIns: [CheckInSnapshot], calendar: Calendar) -> [Date: CheckInSnapshot] {
+        var dict: [Date: CheckInSnapshot] = [:]
         for checkIn in checkIns {
-            let key = formatter.string(from: checkIn.date)
-            checkInByDate[key] = checkIn
+            dict[calendar.startOfDay(for: checkIn.date)] = checkIn
+        }
+        return dict
+    }
+
+    static func streakMetrics(
+        checkIns: [CheckInSnapshot],
+        history: [PlanHistoryEntry],
+        calendar: Calendar,
+        now: Date
+    ) -> AdherenceStreakMetrics {
+        guard let start = history.first?.startDate else {
+            return AdherenceStreakMetrics(current: 0, bestEver: 0, totalDaysFollowed: 0)
         }
 
-        var streak = 0
-        var current = startDate
+        let today = calendar.startOfDay(for: now)
+        let byDay = checkInsByDay(checkIns, calendar: calendar)
 
-        while current <= today {
-            let key = formatter.string(from: current)
-            let checkIn = checkInByDate[key]
-            let isPlanDay = plan.days.contains(date: current)
-            let isToday = calendar.isDateInToday(current)
+        var currentStreak = 0
+        var bestEver = 0
+        var totalFollowed = 0
+        var cursor = start
 
-            if isPlanDay {
-                if let adherence = checkIn?.planAdherence {
-                    switch adherence {
-                    case .yes, .partially:
-                        streak += 1
-                    case .no:
-                        streak = 0
+        while cursor <= today {
+            let checkIn = byDay[cursor]
+            let committedMask = committedDays(on: cursor, history: history, calendar: calendar)
+            let isCommitted = committedMask?.contains(date: cursor) ?? false
+            let isToday = calendar.isDate(cursor, inSameDayAs: today)
+
+            if let adherence = checkIn?.planAdherence {
+                switch adherence {
+                case .yes, .partially:
+                    currentStreak += 1
+                    bestEver = max(bestEver, currentStreak)
+                    totalFollowed += 1
+                case .no:
+                    if isCommitted {
+                        currentStreak = 0
                     }
-                } else if isToday {
-                    // Grace period — keep current streak
-                } else {
-                    streak = 0
                 }
-            } else {
-                if let checkIn {
-                    if let adherence = checkIn.planAdherence {
-                        switch adherence {
-                        case .yes, .partially:
-                            streak += 1
-                        case .no:
-                            break // skip, no impact
-                        }
-                    }
-                    // No adherence → skip
+            } else if checkIn != nil {
+                if isCommitted {
+                    currentStreak = 0
                 }
-                // No check-in on non-plan day → skip
+            } else if isCommitted && !isToday {
+                currentStreak = 0
             }
 
-            current = calendar.date(byAdding: .day, value: 1, to: current) ?? today
+            cursor = calendar.date(byAdding: .day, value: 1, to: cursor) ?? today
         }
 
-        currentStreak = streak
+        return AdherenceStreakMetrics(current: currentStreak, bestEver: bestEver, totalDaysFollowed: totalFollowed)
     }
 }

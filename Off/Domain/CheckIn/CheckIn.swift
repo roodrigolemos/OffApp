@@ -19,6 +19,7 @@ final class CheckIn {
     var controlRaw: Int
     var urgeLevelRaw: Int
     var planAdherenceRaw: Int?
+    var wasPlanDayRaw: Bool
 
     init(from snapshot: CheckInSnapshot) {
         self.id = snapshot.id
@@ -31,6 +32,7 @@ final class CheckIn {
         self.controlRaw = snapshot.control.rawValue
         self.urgeLevelRaw = snapshot.urgeLevel.rawValue
         self.planAdherenceRaw = snapshot.planAdherence?.rawValue
+        self.wasPlanDayRaw = snapshot.wasPlanDay
     }
 
     func toSnapshot() -> CheckInSnapshot {
@@ -44,7 +46,8 @@ final class CheckIn {
             patience: AttributeRating(rawValue: patienceRaw) ?? .same,
             control: ControlRating(rawValue: controlRaw) ?? .same,
             urgeLevel: UrgeLevel(rawValue: urgeLevelRaw) ?? .none,
-            planAdherence: planAdherenceRaw.flatMap { PlanAdherence(rawValue: $0) }
+            planAdherence: planAdherenceRaw.flatMap { PlanAdherence(rawValue: $0) },
+            wasPlanDay: wasPlanDayRaw
         )
     }
 }

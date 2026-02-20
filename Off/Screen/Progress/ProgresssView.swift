@@ -11,6 +11,8 @@ import Charts
 struct ProgresssView: View {
 
     @Environment(AttributeManager.self) var attributeManager
+    @Environment(PlanManager.self) var planManager
+    @Environment(CheckInManager.self) var checkInManager
 
     @State private var showArchive: Bool = false
     @State private var isUsageExpanded: Bool = false
@@ -41,6 +43,7 @@ struct ProgresssView: View {
 
 #Preview {
     ProgresssView()
+        .withPreviewManagers()
 }
 
 // MARK: - Sections
@@ -242,24 +245,27 @@ private extension ProgresssView {
     }
 
     var monthNavigationHeader: some View {
-        HStack {
+        let monthCount = adherenceMonths.count
+        let selected = selectedAdherenceMonth
+
+        return HStack {
             Button {
                 withAnimation(.easeInOut(duration: 0.3)) {
-                    selectedMonthIndex = min(selectedMonthIndex + 1, availableMonths.count - 1)
+                    selectedMonthIndex = min(selectedMonthIndex + 1, monthCount - 1)
                 }
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(selectedMonthIndex < availableMonths.count - 1
+                    .foregroundStyle(selectedMonthIndex < monthCount - 1
                         ? Color.offTextPrimary
                         : Color.offTextMuted.opacity(0.3))
             }
             .buttonStyle(.plain)
-            .disabled(selectedMonthIndex >= availableMonths.count - 1)
+            .disabled(selectedMonthIndex >= monthCount - 1)
 
             Spacer()
 
-            Text(availableMonths[selectedMonthIndex].displayName.uppercased())
+            Text(selected.displayName.uppercased())
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(Color.offTextMuted)
                 .tracking(1.4)
@@ -296,39 +302,33 @@ private extension ProgresssView {
     }
 
     var adherenceGrid: some View {
-        let monthData = availableMonths[selectedMonthIndex].adherenceData
+        let monthData = selectedAdherenceMonth.cells
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7), spacing: 8) {
-            ForEach(monthData.indices, id: \.self) { index in
-                Circle()
-                    .fill(adherenceColor(for: monthData[index]))
-                    .frame(width: 28, height: 28)
+            ForEach(monthData) { day in
+                if day.state == .padding {
+                    Color.clear
+                        .frame(width: 28, height: 28)
+                } else {
+                    Circle()
+                        .fill(adherenceFillColor(for: day.state))
+                        .overlay {
+                            Circle()
+                                .stroke(adherenceStrokeColor(for: day.state), lineWidth: adherenceStrokeWidth(for: day.state))
+                        }
+                        .frame(width: 28, height: 28)
+                }
             }
         }
     }
 
     var adherenceStats: some View {
-        let stats = calculateAdherenceStats(monthData: availableMonths[selectedMonthIndex].adherenceData)
+        let month = selectedAdherenceMonth
 
-        return HStack(spacing: 16) {
-            HStack(spacing: 6) {
-                Text("\(stats.followedDays)/\(stats.totalDays)")
-                    .font(.system(size: 17, weight: .heavy))
-                    .foregroundStyle(Color.offTextPrimary)
-                Text("days")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color.offTextSecondary)
-            }
-
+        return HStack {
+            Text("\(month.numerator)/\(month.denominator) plan days · \(month.percentage)%")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.offTextPrimary)
             Spacer()
-
-            HStack(spacing: 6) {
-                Text("\(stats.percentage)%")
-                    .font(.system(size: 17, weight: .heavy))
-                    .foregroundStyle(Color.offAccent)
-                Text("adherence")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(Color.offTextSecondary)
-            }
         }
     }
 
@@ -385,7 +385,7 @@ private extension ProgresssView {
                             )
                     }
 
-                    Text("\(calculateTotalDaysFollowed())")
+                    Text("\(adherenceMetrics.totalDaysFollowed)")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.offTextPrimary)
                 }
@@ -407,7 +407,7 @@ private extension ProgresssView {
     }
 
     var currentStreakCard: some View {
-        let streakInfo = calculateStreakInfo()
+        let streakInfo = adherenceMetrics
 
         return ZStack {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -453,7 +453,7 @@ private extension ProgresssView {
                             )
                     }
 
-                    Text("\(streakInfo.currentStreak)")
+                    Text("\(streakInfo.current)")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.offTextPrimary)
                 }
@@ -475,7 +475,7 @@ private extension ProgresssView {
     }
 
     var bestEverStreakCard: some View {
-        let streakInfo = calculateStreakInfo()
+        let streakInfo = adherenceMetrics
 
         return ZStack {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -521,7 +521,7 @@ private extension ProgresssView {
                             )
                     }
 
-                    Text("\(streakInfo.bestAllTime)")
+                    Text("\(streakInfo.bestEver)")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.offTextPrimary)
                 }
@@ -1059,15 +1059,6 @@ private extension ProgresssView {
         return levels[index]
     }
 
-    func adherenceColor(for status: Int) -> Color {
-        switch status {
-        case 1: return Color.offAccent
-        case 2: return Color.offAccent.opacity(0.4)
-        case 3: return Color.offStroke
-        default: return Color.offTextMuted.opacity(0.2)
-        }
-    }
-
     func urgeLabel(for index: Int) -> String {
         switch index {
         case 0: return "None"
@@ -1077,98 +1068,182 @@ private extension ProgresssView {
         }
     }
 
-    func calculateAdherenceStats(monthData: [Int]) -> (followedDays: Int, totalDays: Int, percentage: Int) {
-        let totalDays = monthData.count
-        let followedDays = monthData.filter { $0 == 1 }.count
-        let percentage = totalDays > 0 ? Int(Double(followedDays) / Double(totalDays) * 100) : 0
-        return (followedDays, totalDays, percentage)
+    var adherenceMetrics: AdherenceStreakMetrics {
+        checkInManager.streakMetrics(plan: planManager.activePlan, planHistory: planManager.planHistory)
     }
 
-    func calculateTotalDaysFollowed() -> Int {
-        var totalDays = 0
-        for month in availableMonths {
-            totalDays += month.adherenceData.filter { $0 == 1 }.count
-        }
-        return totalDays
+    var selectedAdherenceMonth: AdherenceMonth {
+        let months = adherenceMonths
+        let index = min(max(selectedMonthIndex, 0), max(months.count - 1, 0))
+        return months[index]
     }
 
-    func calculateCurrentStreak() -> Int {
-        let allMonths = availableMonths
-        var streak = 0
+    var adherenceMonths: [AdherenceMonth] {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2
 
-        for month in allMonths {
-            for status in month.adherenceData.reversed() {
-                if status == 1 {
-                    streak += 1
-                } else if status != 0 {
-                    return streak
-                }
-            }
-        }
+        let history = planHistoryEntries(calendar: calendar)
+        let today = calendar.startOfDay(for: .now)
+        let firstPlanStart = history.first?.startDate
 
-        return streak
-    }
+        let startMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: firstPlanStart ?? today)) ?? today
+        let currentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: today)) ?? today
+        let checkInsByDay = Dictionary(uniqueKeysWithValues: checkInManager.checkIns.map { (calendar.startOfDay(for: $0.date), $0) })
 
-    func calculateBestAllTimeStreak() -> Int {
-        let allMonths = availableMonths.reversed()
-        var maxStreak = 0
-        var currentStreak = 0
+        var months: [AdherenceMonth] = []
+        var cursor = currentMonth
 
-        for month in allMonths {
-            for status in month.adherenceData {
-                if status == 1 {
-                    currentStreak += 1
-                    maxStreak = max(maxStreak, currentStreak)
-                } else if status != 0 {
-                    currentStreak = 0
-                }
-            }
-        }
-
-        return maxStreak
-    }
-
-    func calculateStreakInfo() -> (currentStreak: Int, bestAllTime: Int) {
-        (calculateCurrentStreak(), calculateBestAllTimeStreak())
-    }
-
-    var availableMonths: [MonthData] {
-        [
-            MonthData(
-                id: "2026-01",
-                displayName: "January 2026",
-                adherenceData: [
-                    0, 0,
-                    1, 1, 1, 2, 1,
-                    1, 1, 1, 1, 3, 1, 1,
-                    1, 2, 1, 1, 1, 3, 1,
-                    1, 1, 1, 2, 1, 1, 2,
-                    1, 1, 1, 1, 3
-                ]
-            ),
-            MonthData(
-                id: "2025-12",
-                displayName: "December 2025",
-                adherenceData: [
-                    0, 0, 1, 1, 1, 1, 1,
-                    1, 2, 1, 1, 1, 1, 2,
-                    1, 1, 1, 3, 1, 1, 1,
-                    1, 1, 2, 1, 1, 1, 1,
-                    1, 1, 1
-                ]
-            ),
-            MonthData(
-                id: "2025-11",
-                displayName: "November 2025",
-                adherenceData: [
-                    1, 1, 2, 1, 1, 1, 1,
-                    3, 1, 1, 1, 2, 1, 1,
-                    1, 1, 1, 1, 3, 1, 1,
-                    1, 1, 1, 2, 1, 1, 1,
-                    1, 1
-                ]
+        while cursor >= startMonth {
+            let monthStart = cursor
+            let month = makeAdherenceMonth(
+                monthStart: monthStart,
+                today: today,
+                firstPlanStart: firstPlanStart,
+                history: history,
+                checkInsByDay: checkInsByDay,
+                calendar: calendar
             )
-        ]
+            months.append(month)
+
+            guard let previous = calendar.date(byAdding: .month, value: -1, to: monthStart) else { break }
+            cursor = previous
+        }
+
+        return months.isEmpty ? [makeFallbackMonth(today: today, calendar: calendar)] : months
+    }
+
+    func adherenceFillColor(for state: AdherenceCellState) -> Color {
+        switch state {
+        case .committedFollowed: return Color.offAccent
+        case .committedMissed: return Color.offWarn
+        case .offFollowed: return Color.offAccent.opacity(0.16)
+        case .offNeutral: return Color.offTextMuted.opacity(0.2)
+        case .inactive: return Color.offBackgroundPrimary
+        case .todayNeutral: return Color.offBackgroundSecondary
+        case .padding: return .clear
+        }
+    }
+
+    func adherenceStrokeColor(for state: AdherenceCellState) -> Color {
+        switch state {
+        case .offFollowed, .todayNeutral: return Color.offAccent
+        case .inactive: return Color.offStroke
+        case .padding, .committedFollowed, .committedMissed, .offNeutral: return .clear
+        }
+    }
+
+    func adherenceStrokeWidth(for state: AdherenceCellState) -> CGFloat {
+        switch state {
+        case .offFollowed, .todayNeutral: return 1
+        default: return 0
+        }
+    }
+
+    func planHistoryEntries(calendar: Calendar) -> [PlanHistoryEntry] {
+        let plans = planManager.planHistory.isEmpty ? (planManager.activePlan.map { [$0] } ?? []) : planManager.planHistory
+        let sorted = plans.sorted { $0.createdAt < $1.createdAt }
+        var byDay: [Date: PlanHistoryEntry] = [:]
+
+        for plan in sorted {
+            let day = calendar.startOfDay(for: plan.createdAt)
+            byDay[day] = PlanHistoryEntry(startDate: day, committedDays: plan.days)
+        }
+
+        return byDay.values.sorted { $0.startDate < $1.startDate }
+    }
+
+    func committedDays(on date: Date, history: [PlanHistoryEntry], calendar: Calendar) -> DaysOfWeek? {
+        let day = calendar.startOfDay(for: date)
+        return history.last(where: { $0.startDate <= day })?.committedDays
+    }
+
+    func makeAdherenceMonth(
+        monthStart: Date,
+        today: Date,
+        firstPlanStart: Date?,
+        history: [PlanHistoryEntry],
+        checkInsByDay: [Date: CheckInSnapshot],
+        calendar: Calendar
+    ) -> AdherenceMonth {
+        let daysRange = calendar.range(of: .day, in: .month, for: monthStart) ?? 1..<2
+        let weekday = calendar.component(.weekday, from: monthStart)
+        let leadingPadding = (weekday + 5) % 7
+        let display = monthStart.formatted(.dateTime.month(.wide).year())
+
+        var cells: [AdherenceDayCell] = []
+        var numerator = 0
+        var denominator = 0
+
+        for _ in 0..<leadingPadding {
+            cells.append(AdherenceDayCell(date: nil, state: .padding))
+        }
+
+        for day in daysRange {
+            guard let date = calendar.date(byAdding: .day, value: day - 1, to: monthStart) else { continue }
+            let dayStart = calendar.startOfDay(for: date)
+            let checkIn = checkInsByDay[dayStart]
+            let isFuture = dayStart > today
+            let isBeforePlan = firstPlanStart.map { dayStart < $0 } ?? true
+            let isToday = calendar.isDate(dayStart, inSameDayAs: today)
+            let committedForDay = committedDays(on: dayStart, history: history, calendar: calendar)
+            let isCommitted = committedForDay?.contains(date: dayStart) ?? false
+
+            if isCommitted {
+                denominator += 1
+                if let adherence = checkIn?.planAdherence,
+                   checkIn?.wasPlanDay == true,
+                   adherence == .yes || adherence == .partially {
+                    numerator += 1
+                }
+            }
+
+            let state: AdherenceCellState
+            if isBeforePlan || isFuture {
+                state = .inactive
+            } else if checkIn == nil && isToday {
+                state = .todayNeutral
+            } else if let checkIn {
+                switch checkIn.planAdherence {
+                case .yes, .partially:
+                    state = checkIn.wasPlanDay ? .committedFollowed : .offFollowed
+                case .no, nil:
+                    state = checkIn.wasPlanDay ? .committedMissed : .offNeutral
+                }
+            } else if isCommitted {
+                state = .committedMissed
+            } else {
+                state = .offNeutral
+            }
+
+            cells.append(AdherenceDayCell(date: dayStart, state: state))
+        }
+
+        while cells.count < 42 {
+            cells.append(AdherenceDayCell(date: nil, state: .padding))
+        }
+
+        let percentage = denominator > 0 ? Int((Double(numerator) / Double(denominator)) * 100) : 0
+        let id = monthStart.formatted(.dateTime.year().month(.twoDigits))
+        return AdherenceMonth(
+            id: id,
+            displayName: display,
+            cells: cells,
+            numerator: numerator,
+            denominator: denominator,
+            percentage: percentage
+        )
+    }
+
+    func makeFallbackMonth(today: Date, calendar: Calendar) -> AdherenceMonth {
+        let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: today)) ?? today
+        return makeAdherenceMonth(
+            monthStart: monthStart,
+            today: today,
+            firstPlanStart: nil,
+            history: [],
+            checkInsByDay: [:],
+            calendar: calendar
+        )
     }
 
     var urgeData: [Double] {
@@ -1187,8 +1262,27 @@ private struct ChartPoint: Identifiable {
     let value: Double
 }
 
-private struct MonthData: Identifiable {
+private enum AdherenceCellState: Equatable {
+    case padding
+    case inactive
+    case committedFollowed
+    case committedMissed
+    case offFollowed
+    case offNeutral
+    case todayNeutral
+}
+
+private struct AdherenceDayCell: Identifiable, Equatable {
+    let id = UUID()
+    let date: Date?
+    let state: AdherenceCellState
+}
+
+private struct AdherenceMonth: Identifiable, Equatable {
     let id: String
     let displayName: String
-    let adherenceData: [Int]
+    let cells: [AdherenceDayCell]
+    let numerator: Int
+    let denominator: Int
+    let percentage: Int
 }

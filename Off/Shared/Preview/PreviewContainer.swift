@@ -24,7 +24,7 @@ struct PreviewContainer {
     
     static let checkInManager: CheckInManager = {
         let manager = CheckInManager(store: MockCheckInStore())
-        manager.boot(plan: planManager.activePlan)
+        manager.boot(plan: planManager.activePlan, planHistory: planManager.planHistory)
         return manager
     }()
     

@@ -34,17 +34,11 @@ struct AppView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 checkInManager.loadCheckIns()
-                checkInManager.calculateStreak(plan: planManager.activePlan)
-                checkInManager.calculateWeekDays(plan: planManager.activePlan)
+                checkInManager.calculateStreak(plan: planManager.activePlan,planHistory: planManager.planHistory)
+                checkInManager.calculateWeekDays(plan: planManager.activePlan, planHistory: planManager.planHistory)
                 checkInManager.calculateWeekDayCards()
-                attributeManager.runWeeklyEvolutionIfNeeded(
-                    plan: planManager.activePlan,
-                    checkIns: checkInManager.checkIns
-                )
-                insightManager.checkWeeklyInsightAvailability(
-                    plan: planManager.activePlan,
-                    checkIns: checkInManager.checkIns
-                )
+                attributeManager.runWeeklyEvolutionIfNeeded(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
+                insightManager.checkWeeklyInsightAvailability(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
             }
         }
     }
@@ -52,15 +46,9 @@ struct AppView: View {
     private func bootstrap() {
         planManager.loadPlan()
         attributeManager.loadScores()
-        checkInManager.boot(plan: planManager.activePlan)
-        attributeManager.runWeeklyEvolutionIfNeeded(
-            plan: planManager.activePlan,
-            checkIns: checkInManager.checkIns
-        )
-        insightManager.checkWeeklyInsightAvailability(
-            plan: planManager.activePlan,
-            checkIns: checkInManager.checkIns
-        )
+        checkInManager.boot(plan: planManager.activePlan, planHistory: planManager.planHistory)
+        attributeManager.runWeeklyEvolutionIfNeeded(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
+        insightManager.checkWeeklyInsightAvailability(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
     }
 }
 

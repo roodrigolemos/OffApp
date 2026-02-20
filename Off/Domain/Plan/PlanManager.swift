@@ -13,6 +13,7 @@ final class PlanManager {
     private let store: PlanStore
 
     var activePlan: PlanSnapshot?
+    var planHistory: [PlanSnapshot] = []
     var error: PlanError?
 
     var isPlanDay: Bool {
@@ -41,7 +42,8 @@ final class PlanManager {
 
     func loadPlan() {
         do {
-            activePlan = try store.fetchActivePlan()
+            planHistory = try store.fetchAllPlans()
+            activePlan = planHistory.last
             error = nil
         } catch {
             self.error = .loadFailed
@@ -52,8 +54,7 @@ final class PlanManager {
         do {
             let snapshot = PlanSnapshot(preset: preset, selectedApps: selectedApps, createdAt: .now)
             try store.save(snapshot)
-            activePlan = snapshot
-            error = nil
+            loadPlan()
         } catch {
             self.error = .saveFailed
         }
@@ -68,8 +69,7 @@ final class PlanManager {
                 firstPlanCreatedAt: activePlan?.firstPlanCreatedAt
             )
             try store.save(snapshot)
-            activePlan = snapshot
-            error = nil
+            loadPlan()
         } catch {
             self.error = .saveFailed
         }
@@ -116,8 +116,7 @@ final class PlanManager {
                 condition: condition
             )
             try store.save(snapshot)
-            activePlan = snapshot
-            error = nil
+            loadPlan()
         } catch {
             self.error = .saveFailed
         }

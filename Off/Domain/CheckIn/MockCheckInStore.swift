@@ -21,31 +21,32 @@ final class MockCheckInStore: CheckInStore {
             case 5: nil
             default: .yes
             }
+            let wasPlanDay = daysAgo != 5
 
             let snapshot: CheckInSnapshot = switch daysAgo {
             case 1:
                 CheckInSnapshot(
                     date: date, clarity: .better, focus: .better,
                     energy: .same, drive: .better, patience: .better,
-                    control: .conscious, urgeLevel: .noticeable, planAdherence: adherence
+                    control: .conscious, urgeLevel: .noticeable, planAdherence: adherence, wasPlanDay: wasPlanDay
                 )
             case 2:
                 CheckInSnapshot(
                     date: date, clarity: .same, focus: .worse,
                     energy: .better, drive: .same, patience: .same,
-                    control: .same, urgeLevel: .none, planAdherence: adherence
+                    control: .same, urgeLevel: .none, planAdherence: adherence, wasPlanDay: wasPlanDay
                 )
             case 4:
                 CheckInSnapshot(
                     date: date, clarity: .worse, focus: .same,
                     energy: .worse, drive: .worse, patience: .same,
-                    control: .automatic, urgeLevel: .persistent, planAdherence: adherence
+                    control: .automatic, urgeLevel: .persistent, planAdherence: adherence, wasPlanDay: wasPlanDay
                 )
             default:
                 CheckInSnapshot(
                     date: date, clarity: .better, focus: .better,
                     energy: .better, drive: .better, patience: .better,
-                    control: .conscious, urgeLevel: .none, planAdherence: adherence
+                    control: .conscious, urgeLevel: .none, planAdherence: adherence, wasPlanDay: wasPlanDay
                 )
             }
 

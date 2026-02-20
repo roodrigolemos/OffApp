@@ -17,6 +17,7 @@ struct CheckInSnapshot: Identifiable, Equatable {
     let control: ControlRating
     let urgeLevel: UrgeLevel
     let planAdherence: PlanAdherence?
+    let wasPlanDay: Bool
 
     init(
         id: UUID = UUID(),
@@ -28,7 +29,8 @@ struct CheckInSnapshot: Identifiable, Equatable {
         patience: AttributeRating,
         control: ControlRating,
         urgeLevel: UrgeLevel,
-        planAdherence: PlanAdherence?
+        planAdherence: PlanAdherence?,
+        wasPlanDay: Bool
     ) {
         self.id = id
         self.date = date
@@ -40,5 +42,6 @@ struct CheckInSnapshot: Identifiable, Equatable {
         self.control = control
         self.urgeLevel = urgeLevel
         self.planAdherence = planAdherence
+        self.wasPlanDay = wasPlanDay
     }
 }

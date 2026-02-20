@@ -16,6 +16,8 @@ extension CheckInSnapshot {
         patience: .worse,
         control: .conscious,
         urgeLevel: .noticeable,
-        planAdherence: .yes
+        planAdherence: .yes,
+        wasPlanDay: true
     )
 }
+

@@ -212,7 +212,8 @@ private extension CheckInView {
                 patience: patience,
                 control: control,
                 urgeLevel: urgeLevel,
-                planAdherence: planAdherence
+                planAdherence: planAdherence,
+                wasPlanDay: isPlanDay
             )
             checkInManager.save(snapshot)
 

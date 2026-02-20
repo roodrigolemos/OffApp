@@ -39,8 +39,8 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $showCheckIn, onDismiss: {
                 checkInManager.loadCheckIns()
-                checkInManager.calculateStreak(plan: planManager.activePlan)
-                checkInManager.calculateWeekDays(plan: planManager.activePlan)
+                checkInManager.calculateStreak(plan: planManager.activePlan, planHistory: planManager.planHistory)
+                checkInManager.calculateWeekDays(plan: planManager.activePlan, planHistory: planManager.planHistory)
                 checkInManager.calculateWeekDayCards()
             }) {
                 CheckInView()
