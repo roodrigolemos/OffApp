@@ -55,7 +55,7 @@ final class AttributeManager {
                 updatedAt: .now
             )
             try store.saveScores(snapshot)
-            scores = snapshot
+            loadScores()
             error = nil
         } catch {
             self.error = .saveFailed
@@ -98,7 +98,7 @@ final class AttributeManager {
 
         do {
             try store.saveScores(current)
-            scores = current
+            loadScores()
             error = nil
         } catch {
             self.error = .saveFailed
@@ -160,14 +160,12 @@ final class AttributeManager {
     }
 
     private func mondaysToProcess(from lastProcessedMonday: Date?, planStart: Date, now: Date) -> [Date] {
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2
-
-        let thisMonday = monday(for: now, calendar: calendar)
+        let calendar = Calendar.current
+        let thisMonday = Date.thisWeekMonday(now: now)
         let firstCandidateMonday = calendar.date(
             byAdding: .day,
             value: 7,
-            to: monday(for: planStart, calendar: calendar)
+            to: Date.thisWeekMonday(now: planStart)
         ) ?? thisMonday
 
         let startMonday: Date = {
@@ -186,11 +184,6 @@ final class AttributeManager {
             cursor = calendar.date(byAdding: .day, value: 7, to: cursor) ?? thisMonday.addingTimeInterval(1)
         }
         return mondays
-    }
-
-    private func monday(for date: Date, calendar: Calendar) -> Date {
-        let day = calendar.startOfDay(for: date)
-        return calendar.dateInterval(of: .weekOfYear, for: day)?.start ?? day
     }
 
     private func checkInsForPreviousWeek(_ checkIns: [CheckInSnapshot], monday: Date) -> [CheckInSnapshot] {

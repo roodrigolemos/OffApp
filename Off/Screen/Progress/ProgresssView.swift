@@ -13,10 +13,14 @@ struct ProgresssView: View {
     @Environment(AttributeManager.self) var attributeManager
     @Environment(PlanManager.self) var planManager
     @Environment(CheckInManager.self) var checkInManager
+    @Environment(UrgeManager.self) var urgeManager
 
     @State private var showArchive: Bool = false
     @State private var isUsageExpanded: Bool = false
     @State private var selectedMonthIndex: Int = 0
+    @State private var adherenceMonths: [AdherenceMonth] = []
+    @State private var adherenceMetrics = AdherenceStreakMetrics(current: 0, bestEver: 0, totalDaysFollowed: 0)
+    @State private var urgeData: [Double] = Array(repeating: 0, count: 30)
 
     var body: some View {
         NavigationStack {
@@ -36,6 +40,21 @@ struct ProgresssView: View {
                     .padding(.bottom, 48)
                 }
                 .scrollIndicators(.hidden)
+            }
+            .task {
+                refreshDerivedData()
+            }
+            .onChange(of: checkInManager.checkIns) { _, _ in
+                refreshDerivedData()
+            }
+            .onChange(of: planManager.activePlan) { _, _ in
+                refreshDerivedData()
+            }
+            .onChange(of: planManager.planHistory) { _, _ in
+                refreshDerivedData()
+            }
+            .onChange(of: urgeManager.interventions) { _, _ in
+                refreshDerivedData()
             }
         }
     }
@@ -247,21 +266,22 @@ private extension ProgresssView {
     var monthNavigationHeader: some View {
         let monthCount = adherenceMonths.count
         let selected = selectedAdherenceMonth
+        let maxIndex = max(monthCount - 1, 0)
 
         return HStack {
             Button {
                 withAnimation(.easeInOut(duration: 0.3)) {
-                    selectedMonthIndex = min(selectedMonthIndex + 1, monthCount - 1)
+                    selectedMonthIndex = min(selectedMonthIndex + 1, maxIndex)
                 }
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(selectedMonthIndex < monthCount - 1
+                    .foregroundStyle(selectedMonthIndex < maxIndex
                         ? Color.offTextPrimary
                         : Color.offTextMuted.opacity(0.3))
             }
             .buttonStyle(.plain)
-            .disabled(selectedMonthIndex >= monthCount - 1)
+            .disabled(selectedMonthIndex >= maxIndex)
 
             Spacer()
 
@@ -594,74 +614,77 @@ private extension ProgresssView {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
+    @ViewBuilder
     var urgeChart: some View {
         let points = urgeData.enumerated().map { ChartPoint(id: $0.offset, value: $0.element) }
-        let minPoint = points.min(by: { $0.value < $1.value })!
-        let maxPoint = points.max(by: { $0.value < $1.value })!
-
-        return Chart {
-            ForEach(points) { point in
-                AreaMark(
-                    x: .value("Day", point.id),
-                    y: .value("Urge", point.value)
-                )
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color.offWarn.opacity(0.12),
-                            Color.offWarn.opacity(0.03),
-                            Color.offWarn.opacity(0.01)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+        if let minPoint = points.min(by: { $0.value < $1.value }),
+           let maxPoint = points.max(by: { $0.value < $1.value }) {
+            Chart {
+                ForEach(points) { point in
+                    AreaMark(
+                        x: .value("Day", point.id),
+                        y: .value("Urge", point.value)
                     )
-                )
-            }
-
-            ForEach(points) { point in
-                LineMark(
-                    x: .value("Day", point.id),
-                    y: .value("Urge", point.value)
-                )
-                .interpolationMethod(.catmullRom)
-                .lineStyle(StrokeStyle(lineWidth: 2.0, lineCap: .round))
-                .foregroundStyle(Color.offWarn)
-            }
-
-            PointMark(
-                x: .value("Day", minPoint.id),
-                y: .value("Urge", minPoint.value)
-            )
-            .foregroundStyle(Color.offSuccess)
-            .symbolSize(60)
-
-            PointMark(
-                x: .value("Day", maxPoint.id),
-                y: .value("Urge", maxPoint.value)
-            )
-            .foregroundStyle(Color.offWarn)
-            .symbolSize(60)
-        }
-        .chartYScale(domain: 0...3)
-        .chartXAxis(.hidden)
-        .chartYAxis {
-            AxisMarks(values: [0, 1, 2, 3]) { value in
-                AxisValueLabel {
-                    Text(urgeLabel(for: value.as(Int.self) ?? 0))
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(Color.offTextMuted.opacity(0.7))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                Color.offWarn.opacity(0.12),
+                                Color.offWarn.opacity(0.03),
+                                Color.offWarn.opacity(0.01)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                 }
-                AxisGridLine()
-                    .foregroundStyle(Color.offStroke.opacity(0.15))
+
+                ForEach(points) { point in
+                    LineMark(
+                        x: .value("Day", point.id),
+                        y: .value("Urge", point.value)
+                    )
+                    .interpolationMethod(.catmullRom)
+                    .lineStyle(StrokeStyle(lineWidth: 2.0, lineCap: .round))
+                    .foregroundStyle(Color.offWarn)
+                }
+
+                PointMark(
+                    x: .value("Day", minPoint.id),
+                    y: .value("Urge", minPoint.value)
+                )
+                .foregroundStyle(Color.offSuccess)
+                .symbolSize(60)
+
+                PointMark(
+                    x: .value("Day", maxPoint.id),
+                    y: .value("Urge", maxPoint.value)
+                )
+                .foregroundStyle(Color.offWarn)
+                .symbolSize(60)
             }
+            .chartYScale(domain: 0...3)
+            .chartXAxis(.hidden)
+            .chartYAxis {
+                AxisMarks(values: [0, 1, 2, 3]) { value in
+                    AxisValueLabel {
+                        Text(urgeLabel(for: value.as(Int.self) ?? 0))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Color.offTextMuted.opacity(0.7))
+                    }
+                    AxisGridLine()
+                        .foregroundStyle(Color.offStroke.opacity(0.15))
+                }
+            }
+            .chartPlotStyle { plotArea in
+                plotArea
+                    .background(Color.clear)
+                    .cornerRadius(12)
+            }
+            .padding(.vertical, 8)
+            .frame(height: 140)
+        } else {
+            EmptyView()
         }
-        .chartPlotStyle { plotArea in
-            plotArea
-                .background(Color.clear)
-                .cornerRadius(12)
-        }
-        .padding(.vertical, 8)
-        .frame(height: 140)
     }
 
     var weeklyFeedbackCard: some View {
@@ -1068,48 +1091,23 @@ private extension ProgresssView {
         }
     }
 
-    var adherenceMetrics: AdherenceStreakMetrics {
-        checkInManager.streakMetrics(plan: planManager.activePlan, planHistory: planManager.planHistory)
-    }
-
     var selectedAdherenceMonth: AdherenceMonth {
-        let months = adherenceMonths
-        let index = min(max(selectedMonthIndex, 0), max(months.count - 1, 0))
-        return months[index]
-    }
-
-    var adherenceMonths: [AdherenceMonth] {
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2
-
-        let history = planHistoryEntries(calendar: calendar)
-        let today = calendar.startOfDay(for: .now)
-        let firstPlanStart = history.first?.startDate
-
-        let startMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: firstPlanStart ?? today)) ?? today
-        let currentMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: today)) ?? today
-        let checkInsByDay = Dictionary(uniqueKeysWithValues: checkInManager.checkIns.map { (calendar.startOfDay(for: $0.date), $0) })
-
-        var months: [AdherenceMonth] = []
-        var cursor = currentMonth
-
-        while cursor >= startMonth {
-            let monthStart = cursor
-            let month = makeAdherenceMonth(
-                monthStart: monthStart,
-                today: today,
-                firstPlanStart: firstPlanStart,
-                history: history,
-                checkInsByDay: checkInsByDay,
-                calendar: calendar
+        if adherenceMonths.isEmpty {
+            return StatsCalculator.adherenceMonths(
+                checkIns: [],
+                activePlan: nil,
+                planHistory: []
+            ).first ?? AdherenceMonth(
+                id: "fallback",
+                displayName: Date.now.formatted(.dateTime.month(.wide).year()),
+                cells: [],
+                numerator: 0,
+                denominator: 0,
+                percentage: 0
             )
-            months.append(month)
-
-            guard let previous = calendar.date(byAdding: .month, value: -1, to: monthStart) else { break }
-            cursor = previous
         }
-
-        return months.isEmpty ? [makeFallbackMonth(today: today, calendar: calendar)] : months
+        let index = min(max(selectedMonthIndex, 0), max(adherenceMonths.count - 1, 0))
+        return adherenceMonths[index]
     }
 
     func adherenceFillColor(for state: AdherenceCellState) -> Color {
@@ -1139,115 +1137,22 @@ private extension ProgresssView {
         }
     }
 
-    func planHistoryEntries(calendar: Calendar) -> [PlanHistoryEntry] {
-        let plans = planManager.planHistory.isEmpty ? (planManager.activePlan.map { [$0] } ?? []) : planManager.planHistory
-        let sorted = plans.sorted { $0.createdAt < $1.createdAt }
-        var byDay: [Date: PlanHistoryEntry] = [:]
-
-        for plan in sorted {
-            let day = calendar.startOfDay(for: plan.createdAt)
-            byDay[day] = PlanHistoryEntry(startDate: day, committedDays: plan.days)
-        }
-
-        return byDay.values.sorted { $0.startDate < $1.startDate }
-    }
-
-    func committedDays(on date: Date, history: [PlanHistoryEntry], calendar: Calendar) -> DaysOfWeek? {
-        let day = calendar.startOfDay(for: date)
-        return history.last(where: { $0.startDate <= day })?.committedDays
-    }
-
-    func makeAdherenceMonth(
-        monthStart: Date,
-        today: Date,
-        firstPlanStart: Date?,
-        history: [PlanHistoryEntry],
-        checkInsByDay: [Date: CheckInSnapshot],
-        calendar: Calendar
-    ) -> AdherenceMonth {
-        let daysRange = calendar.range(of: .day, in: .month, for: monthStart) ?? 1..<2
-        let weekday = calendar.component(.weekday, from: monthStart)
-        let leadingPadding = (weekday + 5) % 7
-        let display = monthStart.formatted(.dateTime.month(.wide).year())
-
-        var cells: [AdherenceDayCell] = []
-        var numerator = 0
-        var denominator = 0
-
-        for _ in 0..<leadingPadding {
-            cells.append(AdherenceDayCell(date: nil, state: .padding))
-        }
-
-        for day in daysRange {
-            guard let date = calendar.date(byAdding: .day, value: day - 1, to: monthStart) else { continue }
-            let dayStart = calendar.startOfDay(for: date)
-            let checkIn = checkInsByDay[dayStart]
-            let isFuture = dayStart > today
-            let isBeforePlan = firstPlanStart.map { dayStart < $0 } ?? true
-            let isToday = calendar.isDate(dayStart, inSameDayAs: today)
-            let committedForDay = committedDays(on: dayStart, history: history, calendar: calendar)
-            let isCommitted = committedForDay?.contains(date: dayStart) ?? false
-
-            if isCommitted {
-                denominator += 1
-                if let adherence = checkIn?.planAdherence,
-                   checkIn?.wasPlanDay == true,
-                   adherence == .yes || adherence == .partially {
-                    numerator += 1
-                }
-            }
-
-            let state: AdherenceCellState
-            if isBeforePlan || isFuture {
-                state = .inactive
-            } else if checkIn == nil && isToday {
-                state = .todayNeutral
-            } else if let checkIn {
-                switch checkIn.planAdherence {
-                case .yes, .partially:
-                    state = checkIn.wasPlanDay ? .committedFollowed : .offFollowed
-                case .no, nil:
-                    state = checkIn.wasPlanDay ? .committedMissed : .offNeutral
-                }
-            } else if isCommitted {
-                state = .committedMissed
-            } else {
-                state = .offNeutral
-            }
-
-            cells.append(AdherenceDayCell(date: dayStart, state: state))
-        }
-
-        while cells.count < 42 {
-            cells.append(AdherenceDayCell(date: nil, state: .padding))
-        }
-
-        let percentage = denominator > 0 ? Int((Double(numerator) / Double(denominator)) * 100) : 0
-        let id = monthStart.formatted(.dateTime.year().month(.twoDigits))
-        return AdherenceMonth(
-            id: id,
-            displayName: display,
-            cells: cells,
-            numerator: numerator,
-            denominator: denominator,
-            percentage: percentage
+    func refreshDerivedData() {
+        adherenceMetrics = StatsCalculator.streakMetrics(
+            checkIns: checkInManager.checkIns,
+            activePlan: planManager.activePlan,
+            planHistory: planManager.planHistory
         )
-    }
-
-    func makeFallbackMonth(today: Date, calendar: Calendar) -> AdherenceMonth {
-        let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: today)) ?? today
-        return makeAdherenceMonth(
-            monthStart: monthStart,
-            today: today,
-            firstPlanStart: nil,
-            history: [],
-            checkInsByDay: [:],
-            calendar: calendar
+        adherenceMonths = StatsCalculator.adherenceMonths(
+            checkIns: checkInManager.checkIns,
+            activePlan: planManager.activePlan,
+            planHistory: planManager.planHistory
         )
-    }
-
-    var urgeData: [Double] {
-        [2.8, 2.5, 2.7, 2.9, 2.4, 2.6, 2.3, 2.5, 2.2, 2.4, 2.1, 2.3, 2.0, 2.2, 1.9, 2.1, 1.8, 2.0, 1.7, 1.9, 1.6, 1.8, 1.5, 1.7, 1.4, 1.6, 1.3, 1.5, 1.2, 1.1]
+        urgeData = StatsCalculator.urgeTrend(
+            checkIns: checkInManager.checkIns,
+            interventions: urgeManager.interventions
+        )
+        selectedMonthIndex = min(selectedMonthIndex, max(adherenceMonths.count - 1, 0))
     }
 
     var usageTrendData: [Double] {
@@ -1260,29 +1165,4 @@ private extension ProgresssView {
 private struct ChartPoint: Identifiable {
     let id: Int
     let value: Double
-}
-
-private enum AdherenceCellState: Equatable {
-    case padding
-    case inactive
-    case committedFollowed
-    case committedMissed
-    case offFollowed
-    case offNeutral
-    case todayNeutral
-}
-
-private struct AdherenceDayCell: Identifiable, Equatable {
-    let id = UUID()
-    let date: Date?
-    let state: AdherenceCellState
-}
-
-private struct AdherenceMonth: Identifiable, Equatable {
-    let id: String
-    let displayName: String
-    let cells: [AdherenceDayCell]
-    let numerator: Int
-    let denominator: Int
-    let percentage: Int
 }

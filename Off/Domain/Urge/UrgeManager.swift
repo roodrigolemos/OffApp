@@ -66,6 +66,7 @@ final class UrgeManager {
         let snapshot = session.buildSnapshot(completedFull: true)
         do {
             try store.save(snapshot)
+            loadInterventions()
             error = nil
         } catch {
             self.error = .saveFailed
@@ -81,6 +82,7 @@ final class UrgeManager {
             let snapshot = session.buildSnapshot(completedFull: false)
             do {
                 try store.save(snapshot)
+                loadInterventions()
                 error = nil
             } catch {
                 self.error = .saveFailed

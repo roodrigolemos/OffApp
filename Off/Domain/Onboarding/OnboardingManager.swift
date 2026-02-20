@@ -11,8 +11,8 @@ import Observation
 final class OnboardingManager {
     
     var baselineRatings: [Attribute: Int] = [:]
-    var socialTime: String?
-    var selectedPreset: PlanPreset?
+    var socialTime: String? = nil
+    var selectedPreset: PlanPreset? = nil
     var selectedApps: Set<SocialApp> = []
     var selectedMirrorCards: Set<Int> = []
 

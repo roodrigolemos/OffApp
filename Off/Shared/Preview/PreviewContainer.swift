@@ -9,32 +9,23 @@ import SwiftUI
 struct PreviewContainer {
     
     static let appState = AppState()
-    
-    static let attributeManager: AttributeManager = {
-        let manager = AttributeManager(store: MockAttributeStore())
-        manager.loadScores()
-        return manager
-    }()
-    
-    static let planManager: PlanManager = {
-        let manager = PlanManager(store: MockPlanStore())
-        manager.loadPlan()
-        return manager
-    }()
-    
-    static let checkInManager: CheckInManager = {
-        let manager = CheckInManager(store: MockCheckInStore())
-        manager.boot(plan: planManager.activePlan, planHistory: planManager.planHistory)
-        return manager
-    }()
-    
-    static let urgeManager: UrgeManager = {
-        let manager = UrgeManager(store: MockUrgeStore())
-        manager.loadInterventions()
-        return manager
-    }()
-    
+    static let onboardingManager = OnboardingManager()
+    static let bootstrapManager = BootstrapManager()
+    static let attributeManager = AttributeManager(store: MockAttributeStore())
+    static let planManager = PlanManager(store: MockPlanStore())
+    static let checkInManager = CheckInManager(store: MockCheckInStore())
+    static let urgeManager = UrgeManager(store: MockUrgeStore())
     static let insightManager = InsightManager(store: MockInsightStore(), aiService: MockAIService())
+    
+    static func bootstrap() {
+        bootstrapManager.bootstrap(
+            planManager: planManager,
+            checkInManager: checkInManager,
+            attributeManager: attributeManager,
+            insightManager: insightManager,
+            urgeManager: urgeManager
+        )
+    }
 }
 
 extension View {
@@ -42,10 +33,13 @@ extension View {
     func withPreviewManagers() -> some View {
         self
             .environment(PreviewContainer.appState)
+            .environment(PreviewContainer.onboardingManager)
             .environment(PreviewContainer.attributeManager)
             .environment(PreviewContainer.planManager)
             .environment(PreviewContainer.checkInManager)
             .environment(PreviewContainer.urgeManager)
             .environment(PreviewContainer.insightManager)
+            .environment(PreviewContainer.bootstrapManager)
+            .task { PreviewContainer.bootstrap() }
     }
 }

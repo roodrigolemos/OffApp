@@ -26,7 +26,7 @@ final class InsightManager {
     // MARK: - Availability (called from HomeView .task)
 
     func checkWeeklyInsightAvailability(plan: PlanSnapshot?, checkIns: [CheckInSnapshot]) {
-        let lastMonday = lastWeekMonday()
+        let lastMonday = Date.lastWeekMonday()
 
         do {
             if let existing = try store.fetchForWeekStart(lastMonday) {
@@ -41,7 +41,7 @@ final class InsightManager {
 
         // First week — plan was created this week
         if let plan {
-            let thisMonday = thisWeekMonday()
+            let thisMonday = Date.thisWeekMonday()
             let planStart = Calendar.current.startOfDay(for: plan.firstPlanCreatedAt)
             if planStart >= thisMonday {
                 weeklyInsightState = .notYetAvailable
@@ -68,7 +68,7 @@ final class InsightManager {
     ) async {
         guard currentInsight == nil else { return }
 
-        let lastMonday = lastWeekMonday()
+        let lastMonday = Date.lastWeekMonday()
         let lastSunday = Calendar.current.date(byAdding: .day, value: 6, to: lastMonday) ?? lastMonday
 
         let lastWeekCheckIns = checkIns.filter { checkIn in
@@ -108,11 +108,13 @@ final class InsightManager {
 
             do {
                 try store.save(snapshot)
+                if let saved = try? store.fetchForWeekStart(snapshot.weekStartDate) {
+                    currentInsight = saved
+                }
+                error = nil
             } catch {
                 self.error = .saveFailed
             }
-
-            currentInsight = snapshot
         } catch {
             self.error = .generationFailed
         }
@@ -159,7 +161,7 @@ final class InsightManager {
         // Previous weeks (up to 3)
         var previousWeeksCheckIns: [[CheckInDataPoint]] = []
         for weeksBack in 2...4 {
-            guard let weekStart = calendar.date(byAdding: .day, value: -7 * weeksBack, to: thisWeekMonday()) else { continue }
+            guard let weekStart = calendar.date(byAdding: .day, value: -7 * weeksBack, to: Date.thisWeekMonday()) else { continue }
             let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
 
             let weekCheckIns = checkIns.filter { checkIn in
@@ -241,29 +243,11 @@ final class InsightManager {
         return "Custom days"
     }
 
-    // MARK: - Date Helpers
-
-    func thisWeekMonday() -> Date {
-        var calendar = Calendar.current
-        calendar.firstWeekday = 2
-        let today = calendar.startOfDay(for: .now)
-        guard let interval = calendar.dateInterval(of: .weekOfYear, for: today) else { return today }
-        return interval.start
-    }
-
-    func lastWeekMonday() -> Date {
-        let calendar = Calendar.current
-        guard let lastMonday = calendar.date(byAdding: .day, value: -7, to: thisWeekMonday()) else {
-            return thisWeekMonday()
-        }
-        return lastMonday
-    }
-
     func weeksSincePlanCreation(plan: PlanSnapshot?) -> Int {
         guard let plan else { return 0 }
         let calendar = Calendar.current
         let planStart = calendar.startOfDay(for: plan.firstPlanCreatedAt)
-        let weeks = calendar.dateComponents([.weekOfYear], from: planStart, to: thisWeekMonday()).weekOfYear ?? 0
+        let weeks = calendar.dateComponents([.weekOfYear], from: planStart, to: Date.thisWeekMonday()).weekOfYear ?? 0
         return max(1, weeks + 1)
     }
 }

@@ -10,7 +10,6 @@ import SwiftUI
 struct HomeView: View {
 
     @Environment(PlanManager.self) var planManager
-    @Environment(AttributeManager.self) var attributeManager
     @Environment(CheckInManager.self) var checkInManager
     @Environment(UrgeManager.self) var urgeManager
     @Environment(InsightManager.self) var insightManager
@@ -19,6 +18,9 @@ struct HomeView: View {
     @State private var showUrgeIntervention = false
     @State private var showWeeklyInsight = false
     @State private var isPlanCardFlipped = false
+    @State private var weekDays: [WeekDayState] = []
+    @State private var weekDayCards: [WeekDayCardData] = []
+    @State private var streakMetrics = AdherenceStreakMetrics(current: 0, bestEver: 0, totalDaysFollowed: 0)
 
     var body: some View {
         NavigationStack {
@@ -39,9 +41,11 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $showCheckIn, onDismiss: {
                 checkInManager.loadCheckIns()
-                checkInManager.calculateStreak(plan: planManager.activePlan, planHistory: planManager.planHistory)
-                checkInManager.calculateWeekDays(plan: planManager.activePlan, planHistory: planManager.planHistory)
-                checkInManager.calculateWeekDayCards()
+                refreshDerivedData()
+                insightManager.checkWeeklyInsightAvailability(
+                    plan: planManager.activePlan,
+                    checkIns: checkInManager.checkIns
+                )
             }) {
                 CheckInView()
             }
@@ -56,10 +60,20 @@ struct HomeView: View {
                 WeeklyInsightDetailView()
             }
             .task {
+                refreshDerivedData()
                 insightManager.checkWeeklyInsightAvailability(
                     plan: planManager.activePlan,
                     checkIns: checkInManager.checkIns
                 )
+            }
+            .onChange(of: checkInManager.checkIns) { _, _ in
+                refreshDerivedData()
+            }
+            .onChange(of: planManager.activePlan) { _, _ in
+                refreshDerivedData()
+            }
+            .onChange(of: planManager.planHistory) { _, _ in
+                refreshDerivedData()
             }
             .animation(.easeInOut, value: checkInManager.hasCheckedInToday)
             .toolbar {
@@ -141,7 +155,7 @@ private extension HomeView {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
-                    ForEach(checkInManager.weekDayCards) { card in
+                    ForEach(weekDayCards) { card in
                         dayCard(
                             day: card.dayLabel,
                             date: card.dateNumber,
@@ -347,7 +361,7 @@ private extension HomeView {
                 Spacer()
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(checkInManager.currentStreak)")
+                    Text("\(streakMetrics.current)")
                         .font(.system(size: 40, weight: .heavy))
                         .foregroundStyle(Color.offTextPrimary)
                         .tracking(-0.5)
@@ -510,7 +524,7 @@ private extension HomeView {
                 Spacer()
 
                 HStack(spacing: 6) {
-                    ForEach(checkInManager.weekDays) { day in
+                    ForEach(weekDays) { day in
                         dayDot(label: day.label, state: day.state)
                     }
                 }
@@ -883,5 +897,21 @@ private extension HomeView {
         if plan.phoneBehavior.logOutAccounts { actions.append("Logout") }
         if plan.phoneBehavior.deleteApps { actions.append("Delete") }
         return actions.isEmpty ? nil : actions.joined(separator: " · ")
+    }
+
+    func refreshDerivedData() {
+        weekDays = StatsCalculator.weekDays(
+            checkIns: checkInManager.checkIns,
+            activePlan: planManager.activePlan,
+            planHistory: planManager.planHistory
+        )
+        weekDayCards = StatsCalculator.weekDayCards(
+            checkIns: checkInManager.checkIns
+        )
+        streakMetrics = StatsCalculator.streakMetrics(
+            checkIns: checkInManager.checkIns,
+            activePlan: planManager.activePlan,
+            planHistory: planManager.planHistory
+        )
     }
 }

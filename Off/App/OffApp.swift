@@ -25,14 +25,17 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 @main
 struct OffApp: App {
     
+    @Environment(\.scenePhase) var scenePhase
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
     @State private var appState: AppState
+    @State private var onboardingManager: OnboardingManager
     @State private var attributeManager: AttributeManager
     @State private var planManager: PlanManager
     @State private var checkInManager: CheckInManager
     @State private var urgeManager: UrgeManager
     @State private var insightManager: InsightManager
+    @State private var bootstrapManager: BootstrapManager
 
     private let container: ModelContainer
     private let config: BuildConfiguration
@@ -55,6 +58,8 @@ struct OffApp: App {
         #endif
 
         _appState = State(initialValue: AppState())
+        _onboardingManager = State(initialValue: OnboardingManager())
+        _bootstrapManager = State(initialValue: BootstrapManager())
 
         switch config {
         case .mock:
@@ -88,11 +93,32 @@ struct OffApp: App {
             AppView()
                 .preferredColorScheme(.light)
                 .environment(appState)
+                .environment(onboardingManager)
                 .environment(attributeManager)
                 .environment(planManager)
                 .environment(checkInManager)
                 .environment(urgeManager)
                 .environment(insightManager)
+                .environment(bootstrapManager)
+                .task {
+                    bootstrapManager.bootstrap(
+                        planManager: planManager,
+                        checkInManager: checkInManager,
+                        attributeManager: attributeManager,
+                        insightManager: insightManager,
+                        urgeManager: urgeManager
+                    )
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    guard newPhase == .active else { return }
+                    bootstrapManager.refresh(
+                        planManager: planManager,
+                        checkInManager: checkInManager,
+                        attributeManager: attributeManager,
+                        insightManager: insightManager,
+                        urgeManager: urgeManager
+                    )
+                }
         }
     }
 }

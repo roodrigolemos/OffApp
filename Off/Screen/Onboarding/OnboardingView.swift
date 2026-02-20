@@ -30,9 +30,9 @@ struct OnboardingView: View {
     @Environment(AppState.self) var appState
     @Environment(AttributeManager.self) var attributeManager
     @Environment(PlanManager.self) var planManager
+    @Environment(OnboardingManager.self) var onboardingManager
 
     @State private var currentStep: OnboardingStep = .welcome
-    @State private var onboardingManager = OnboardingManager()
 
     var body: some View {
         ZStack {
@@ -74,7 +74,6 @@ struct OnboardingView: View {
             }
         }
         .animation(.smooth, value: currentStep)
-        .environment(onboardingManager)
     }
 
     private func completeOnboarding() {

@@ -10,12 +10,7 @@ import SwiftUI
 
 struct AppView: View {
 
-    @Environment(\.scenePhase) var scenePhase
     @Environment(AppState.self) var appState
-    @Environment(PlanManager.self) var planManager
-    @Environment(AttributeManager.self) var attributeManager
-    @Environment(CheckInManager.self) var checkInManager
-    @Environment(InsightManager.self) var insightManager
 
     var body: some View {
         AppViewBuilder(
@@ -27,28 +22,6 @@ struct AppView: View {
                 OnboardingView()
             }
         )
-        .task(id: appState.showTabBar) {
-            guard appState.showTabBar else { return }
-            bootstrap()
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active {
-                checkInManager.loadCheckIns()
-                checkInManager.calculateStreak(plan: planManager.activePlan,planHistory: planManager.planHistory)
-                checkInManager.calculateWeekDays(plan: planManager.activePlan, planHistory: planManager.planHistory)
-                checkInManager.calculateWeekDayCards()
-                attributeManager.runWeeklyEvolutionIfNeeded(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
-                insightManager.checkWeeklyInsightAvailability(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
-            }
-        }
-    }
-
-    private func bootstrap() {
-        planManager.loadPlan()
-        attributeManager.loadScores()
-        checkInManager.boot(plan: planManager.activePlan, planHistory: planManager.planHistory)
-        attributeManager.runWeeklyEvolutionIfNeeded(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
-        insightManager.checkWeeklyInsightAvailability(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
     }
 }
 
