@@ -15,7 +15,8 @@ final class BootstrapManager {
         checkInManager: CheckInManager,
         attributeManager: AttributeManager,
         insightManager: InsightManager,
-        urgeManager: UrgeManager
+        urgeManager: UrgeManager,
+        statsManager: StatsManager
     ) {
         planManager.loadPlan()
         attributeManager.loadScores()
@@ -23,6 +24,12 @@ final class BootstrapManager {
         urgeManager.loadInterventions()
         attributeManager.runWeeklyEvolutionIfNeeded(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
         insightManager.checkWeeklyInsightAvailability(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
+        statsManager.recalculate(
+            checkIns: checkInManager.checkIns,
+            activePlan: planManager.activePlan,
+            planHistory: planManager.planHistory,
+            interventions: urgeManager.interventions
+        )
     }
 
     func refresh(
@@ -30,12 +37,19 @@ final class BootstrapManager {
         checkInManager: CheckInManager,
         attributeManager: AttributeManager,
         insightManager: InsightManager,
-        urgeManager: UrgeManager
+        urgeManager: UrgeManager,
+        statsManager: StatsManager
     ) {
         planManager.loadPlan()
         checkInManager.loadCheckIns()
         urgeManager.loadInterventions()
         attributeManager.runWeeklyEvolutionIfNeeded(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
         insightManager.checkWeeklyInsightAvailability(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
+        statsManager.recalculate(
+            checkIns: checkInManager.checkIns,
+            activePlan: planManager.activePlan,
+            planHistory: planManager.planHistory,
+            interventions: urgeManager.interventions
+        )
     }
 }

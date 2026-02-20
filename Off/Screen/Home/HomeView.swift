@@ -13,14 +13,12 @@ struct HomeView: View {
     @Environment(CheckInManager.self) var checkInManager
     @Environment(UrgeManager.self) var urgeManager
     @Environment(InsightManager.self) var insightManager
+    @Environment(StatsManager.self) var statsManager
 
     @State private var showCheckIn = false
     @State private var showUrgeIntervention = false
     @State private var showWeeklyInsight = false
     @State private var isPlanCardFlipped = false
-    @State private var weekDays: [WeekDayState] = []
-    @State private var weekDayCards: [WeekDayCardData] = []
-    @State private var streakMetrics = AdherenceStreakMetrics(current: 0, bestEver: 0, totalDaysFollowed: 0)
 
     var body: some View {
         NavigationStack {
@@ -41,7 +39,12 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(isPresented: $showCheckIn, onDismiss: {
                 checkInManager.loadCheckIns()
-                refreshDerivedData()
+                statsManager.recalculate(
+                    checkIns: checkInManager.checkIns,
+                    activePlan: planManager.activePlan,
+                    planHistory: planManager.planHistory,
+                    interventions: urgeManager.interventions
+                )
                 insightManager.checkWeeklyInsightAvailability(
                     plan: planManager.activePlan,
                     checkIns: checkInManager.checkIns
@@ -51,6 +54,12 @@ struct HomeView: View {
             }
             .fullScreenCover(isPresented: $showUrgeIntervention, onDismiss: {
                 urgeManager.loadInterventions()
+                statsManager.recalculate(
+                    checkIns: checkInManager.checkIns,
+                    activePlan: planManager.activePlan,
+                    planHistory: planManager.planHistory,
+                    interventions: urgeManager.interventions
+                )
             }) {
                 UrgeInterventionView()
             }
@@ -58,22 +67,6 @@ struct HomeView: View {
                 insightManager.markAsViewed()
             }) {
                 WeeklyInsightDetailView()
-            }
-            .task {
-                refreshDerivedData()
-                insightManager.checkWeeklyInsightAvailability(
-                    plan: planManager.activePlan,
-                    checkIns: checkInManager.checkIns
-                )
-            }
-            .onChange(of: checkInManager.checkIns) { _, _ in
-                refreshDerivedData()
-            }
-            .onChange(of: planManager.activePlan) { _, _ in
-                refreshDerivedData()
-            }
-            .onChange(of: planManager.planHistory) { _, _ in
-                refreshDerivedData()
             }
             .animation(.easeInOut, value: checkInManager.hasCheckedInToday)
             .toolbar {
@@ -155,7 +148,7 @@ private extension HomeView {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
-                    ForEach(weekDayCards) { card in
+                    ForEach(statsManager.weekDayCards) { card in
                         dayCard(
                             day: card.dayLabel,
                             date: card.dateNumber,
@@ -361,7 +354,7 @@ private extension HomeView {
                 Spacer()
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(streakMetrics.current)")
+                    Text("\(statsManager.streakMetrics.current)")
                         .font(.system(size: 40, weight: .heavy))
                         .foregroundStyle(Color.offTextPrimary)
                         .tracking(-0.5)
@@ -524,7 +517,7 @@ private extension HomeView {
                 Spacer()
 
                 HStack(spacing: 6) {
-                    ForEach(weekDays) { day in
+                    ForEach(statsManager.weekDays) { day in
                         dayDot(label: day.label, state: day.state)
                     }
                 }
@@ -584,7 +577,8 @@ private extension HomeView {
         tappable: Bool
     ) -> some View {
         Button {
-            if tappable { showWeeklyInsight = true }
+            guard tappable else { return }
+            showWeeklyInsight = true
         } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -899,19 +893,4 @@ private extension HomeView {
         return actions.isEmpty ? nil : actions.joined(separator: " · ")
     }
 
-    func refreshDerivedData() {
-        weekDays = StatsCalculator.weekDays(
-            checkIns: checkInManager.checkIns,
-            activePlan: planManager.activePlan,
-            planHistory: planManager.planHistory
-        )
-        weekDayCards = StatsCalculator.weekDayCards(
-            checkIns: checkInManager.checkIns
-        )
-        streakMetrics = StatsCalculator.streakMetrics(
-            checkIns: checkInManager.checkIns,
-            activePlan: planManager.activePlan,
-            planHistory: planManager.planHistory
-        )
-    }
 }

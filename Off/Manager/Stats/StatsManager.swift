@@ -1,49 +1,57 @@
 //
-//  StatsCalculator.swift
+//  StatsManager.swift
 //  Off
 //
 
 import Foundation
+import Observation
 
-struct AdherenceStreakMetrics: Equatable {
-    let current: Int
-    let bestEver: Int
-    let totalDaysFollowed: Int
-}
-
-enum AdherenceCellState: Equatable {
-    case padding
-    case inactive
-    case committedFollowed
-    case committedMissed
-    case offFollowed
-    case offNeutral
-    case todayNeutral
-}
-
-struct AdherenceDayCell: Identifiable, Equatable {
-    let id: String
-    let date: Date?
-    let state: AdherenceCellState
-}
-
-struct AdherenceMonth: Identifiable, Equatable {
-    let id: String
-    let displayName: String
-    let cells: [AdherenceDayCell]
-    let numerator: Int
-    let denominator: Int
-    let percentage: Int
-}
-
-private struct PlanHistoryEntry: Equatable {
+struct PlanHistoryEntry: Equatable {
     let startDate: Date
     let committedDays: DaysOfWeek
 }
 
-enum StatsCalculator {
+@MainActor
+@Observable
+final class StatsManager {
 
-    static func streakMetrics(
+    var streakMetrics = AdherenceStreakMetrics(current: 0, bestEver: 0, totalDaysFollowed: 0)
+    var adherenceMonths: [AdherenceMonth] = []
+    var weekDays: [WeekDayState] = []
+    var weekDayCards: [WeekDayCardData] = []
+    var urgeTrend: [Double] = Array(repeating: 0, count: 30)
+    
+    func recalculate(
+        checkIns: [CheckInSnapshot],
+        activePlan: PlanSnapshot?,
+        planHistory: [PlanSnapshot],
+        interventions: [UrgeSnapshot]
+    ) {
+        streakMetrics = computeStreakMetrics(
+            checkIns: checkIns,
+            activePlan: activePlan,
+            planHistory: planHistory
+        )
+        adherenceMonths = computeAdherenceMonths(
+            checkIns: checkIns,
+            activePlan: activePlan,
+            planHistory: planHistory
+        )
+        weekDays = computeWeekDays(
+            checkIns: checkIns,
+            activePlan: activePlan,
+            planHistory: planHistory
+        )
+        weekDayCards = computeWeekDayCards(
+            checkIns: checkIns
+        )
+        urgeTrend = computeUrgeTrend(
+            checkIns: checkIns,
+            interventions: interventions
+        )
+    }
+    
+    func computeStreakMetrics(
         checkIns: [CheckInSnapshot],
         activePlan: PlanSnapshot?,
         planHistory: [PlanSnapshot],
@@ -51,10 +59,10 @@ enum StatsCalculator {
     ) -> AdherenceStreakMetrics {
         let calendar = mondayCalendar()
         let history = planHistoryEntries(plans: planHistory, fallbackPlan: activePlan, calendar: calendar)
-        return streakMetrics(checkIns: checkIns, history: history, calendar: calendar, now: now)
+        return computeStreakMetrics(checkIns: checkIns, history: history, calendar: calendar, now: now)
     }
 
-    static func weekDays(
+    func computeWeekDays(
         checkIns: [CheckInSnapshot],
         activePlan: PlanSnapshot?,
         planHistory: [PlanSnapshot],
@@ -80,15 +88,21 @@ enum StatsCalculator {
             } else if let checkIn = checkInsByDate[dayStart] {
                 if checkIn.wasPlanDay {
                     switch checkIn.planAdherence {
-                    case .yes: state = .followed
-                    case .partially: state = .partially
-                    case .no, nil: state = .notFollowed
+                    case .yes:
+                        state = .followed
+                    case .partially:
+                        state = .partially
+                    case .no, nil:
+                        state = .notFollowed
                     }
                 } else {
                     switch checkIn.planAdherence {
-                    case .yes: state = .followed
-                    case .partially: state = .partially
-                    case .no, nil: state = .restDay
+                    case .yes:
+                        state = .followed
+                    case .partially:
+                        state = .partially
+                    case .no, nil:
+                        state = .restDay
                     }
                 }
             } else if let committedDays = committedDays(on: dayStart, history: history, calendar: calendar),
@@ -106,7 +120,7 @@ enum StatsCalculator {
         return result
     }
 
-    static func weekDayCards(
+    func computeWeekDayCards(
         checkIns: [CheckInSnapshot],
         now: Date = .now
     ) -> [WeekDayCardData] {
@@ -137,7 +151,7 @@ enum StatsCalculator {
         return result
     }
 
-    static func adherenceMonths(
+    func computeAdherenceMonths(
         checkIns: [CheckInSnapshot],
         activePlan: PlanSnapshot?,
         planHistory: [PlanSnapshot],
@@ -175,7 +189,7 @@ enum StatsCalculator {
         return months
     }
 
-    static func urgeTrend(
+    func computeUrgeTrend(
         checkIns: [CheckInSnapshot],
         interventions: [UrgeSnapshot],
         now: Date = .now
@@ -215,17 +229,14 @@ enum StatsCalculator {
         }
         return values
     }
-}
-
-private extension StatsCalculator {
-
-    static func mondayCalendar() -> Calendar {
+    
+    func mondayCalendar() -> Calendar {
         var calendar = Calendar.current
         calendar.firstWeekday = 2
         return calendar
     }
 
-    static func planHistoryEntries(
+    func planHistoryEntries(
         plans: [PlanSnapshot],
         fallbackPlan: PlanSnapshot?,
         calendar: Calendar
@@ -242,12 +253,12 @@ private extension StatsCalculator {
         return byDay.values.sorted { $0.startDate < $1.startDate }
     }
 
-    static func committedDays(on date: Date, history: [PlanHistoryEntry], calendar: Calendar) -> DaysOfWeek? {
+    func committedDays(on date: Date, history: [PlanHistoryEntry], calendar: Calendar) -> DaysOfWeek? {
         let day = calendar.startOfDay(for: date)
         return history.last(where: { $0.startDate <= day })?.committedDays
     }
 
-    static func checkInsByDay(_ checkIns: [CheckInSnapshot], calendar: Calendar) -> [Date: CheckInSnapshot] {
+    func checkInsByDay(_ checkIns: [CheckInSnapshot], calendar: Calendar) -> [Date: CheckInSnapshot] {
         var dict: [Date: CheckInSnapshot] = [:]
         for checkIn in checkIns.sorted(by: { $0.date < $1.date }) {
             dict[calendar.startOfDay(for: checkIn.date)] = checkIn
@@ -255,7 +266,7 @@ private extension StatsCalculator {
         return dict
     }
 
-    static func streakMetrics(
+    func computeStreakMetrics(
         checkIns: [CheckInSnapshot],
         history: [PlanHistoryEntry],
         calendar: Calendar,
@@ -304,7 +315,7 @@ private extension StatsCalculator {
         return AdherenceStreakMetrics(current: currentStreak, bestEver: bestEver, totalDaysFollowed: totalFollowed)
     }
 
-    static func makeAdherenceMonth(
+    func makeAdherenceMonth(
         monthStart: Date,
         today: Date,
         firstPlanStart: Date?,
@@ -394,7 +405,7 @@ private extension StatsCalculator {
         )
     }
 
-    static func makeFallbackMonth(today: Date, calendar: Calendar) -> AdherenceMonth {
+    func makeFallbackMonth(today: Date, calendar: Calendar) -> AdherenceMonth {
         let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: today)) ?? today
         return makeAdherenceMonth(
             monthStart: monthStart,

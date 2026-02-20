@@ -18,15 +18,70 @@ What it does: Displays data and forwards user actions. Nothing else.
 
 Rules:
 - Never imports SwiftData
-- Never contains business logic
-- Reads state from Manager via @Environment
+- Never contains business logic or cross-manager calculations
+- Reads state from Managers via @Environment
 - Calls Manager methods for user actions
-- Uses .task to trigger initial data loading
+- Never calls Manager load methods in .task — bootstrap handles initial loading
+- Uses onDismiss to reload data and recalculate after user actions in presented screens
 - CAN hold local UI state via @State (see below)
+
+### onDismiss Pattern
+
+When a Screen presents another Screen that changes data (check-in, plan change, urge intervention), the presenting Screen reloads the affected Managers and recalculates stats in `onDismiss`. This is the only place Screens call Manager load methods — never in `.task`.
+
+```swift
+struct HomeView: View {
+    @Environment(CheckInManager.self) var checkInManager
+    @Environment(PlanManager.self) var planManager
+    @Environment(UrgeManager.self) var urgeManager
+    @Environment(InsightManager.self) var insightManager
+    @Environment(StatsManager.self) var statsManager
+
+    @State private var showCheckIn = false
+    @State private var showUrgeIntervention = false
+
+    var body: some View {
+        VStack {
+            // content using statsManager.streakMetrics, etc.
+        }
+        .fullScreenCover(isPresented: $showCheckIn, onDismiss: {
+            checkInManager.loadCheckIns()
+            statsManager.recalculate(
+                checkIns: checkInManager.checkIns,
+                activePlan: planManager.activePlan,
+                planHistory: planManager.planHistory,
+                interventions: urgeManager.interventions
+            )
+            insightManager.checkWeeklyInsightAvailability(
+                plan: planManager.activePlan,
+                checkIns: checkInManager.checkIns
+            )
+        }) {
+            CheckInView()
+        }
+        .fullScreenCover(isPresented: $showUrgeIntervention, onDismiss: {
+            urgeManager.loadInterventions()
+            statsManager.recalculate(
+                checkIns: checkInManager.checkIns,
+                activePlan: planManager.activePlan,
+                planHistory: planManager.planHistory,
+                interventions: urgeManager.interventions
+            )
+        }) {
+            UrgeInterventionView()
+        }
+    }
+}
+```
+
+Rules:
+- Only reload the Manager whose data changed (checkInManager after check-in, urgeManager after intervention)
+- Always recalculate stats after any data change that affects derived state
+- Bootstrap handles initial loading — onDismiss handles mid-session changes
 
 ### View State Rule
 
-Screens hold LOCAL UI state — things that only matter to that specific screen. They do NOT hold domain state (data, business logic, anything shared).
+Screens hold LOCAL UI state — things that only matter to that specific screen. They do NOT hold manager state (data, business logic, anything shared).
 
 If it dies when the screen disappears and nobody cares, it's @State in the View.
 If it needs to survive across screens or be shared, it's in the Manager.
@@ -42,9 +97,11 @@ struct CheckInView: View {
     @State private var selectedTab: Int = 0
     @State private var searchText: String = ""
 
-    // ❌ Domain state — belongs in the Manager
+    // ❌ Manager state — belongs in the Manager
     // @State private var checkIns: [CheckInSnapshot] = []
-    // @State private var currentStreak: Int = 0
+
+    // ❌ Cross-manager derived state — belongs in StatsManager
+    // @State private var streakMetrics = AdherenceStreakMetrics(...)
 
     var body: some View {
         VStack {
@@ -54,14 +111,11 @@ struct CheckInView: View {
             ), in: 1...10)
 
             Button("Submit") {
-                Task {
-                    await manager.submitCheckIn(rating: selectedRating)
-                    showConfirmation = true
-                }
+                manager.submitCheckIn(rating: selectedRating)
+                showConfirmation = true
             }
         }
         .alert("Saved!", isPresented: $showConfirmation) { }
-        .task { await manager.loadCheckIns() }
     }
 }
 ```
@@ -92,7 +146,6 @@ struct CheckInView: View {
             submitButton
         }
         .alert("Saved!", isPresented: $showConfirmation) { }
-        .task { await manager.loadCheckIns() }
     }
 }
 
@@ -129,10 +182,8 @@ private extension CheckInView {
 
     var submitButton: some View {
         Button("Submit") {
-            Task {
-                await manager.submitCheckIn(rating: selectedRating)
-                showConfirmation = true
-            }
+            manager.submitCheckIn(rating: selectedRating)
+            showConfirmation = true
         }
     }
 }
@@ -178,18 +229,29 @@ struct CheckInRow: View {
 
 ## Layer 2: Manager
 
-What it does: Owns all business logic and is the single source of truth for a domain. A Manager always owns data with a lifecycle (create, read, update, delete) and delegates persistence to a Store.
+What it does: Handles a specific topic in the app — its state, logic, and rules. A Manager is the single source of truth for its topic. Screens read from it, never compute or store that topic's data themselves.
+
+A Manager may have persisted data with a Store, or it may hold computed/ephemeral state with no Store. The defining trait is: one topic, one Manager.
 
 Rules:
 - @MainActor @Observable
 - Never imports SwiftUI
-- One Manager per domain, not per screen
+- One Manager per topic, not per screen
 - Owns state that Screens read
 - Contains computed properties, validation, transformations
-- Delegates all data operations to the Store
+- If it has a Store: delegates all data operations to the Store, reloads state after every save — never update state in-place manually
 - Exposes only Snapshot structs, never @Model objects
 - Never holds references to other Managers — receives external data as method parameters
-- If the logic only computes derived display state from other domains, it's a Calculator, not a Manager
+
+Current Managers in Off:
+- **PlanManager** — plans (apps, schedule, days)
+- **CheckInManager** — daily self-reports (ratings, adherence)
+- **AttributeManager** — the six wellness scores (evolution, momentum)
+- **UrgeManager** — intervention sessions (timestamps, responses, outcomes)
+- **InsightManager** — weekly AI feedback (narrative text, availability)
+- **StatsManager** — derived state from multiple managers (streaks, adherence, trends)
+- **BootstrapManager** — app startup and refresh sequencing
+- **OnboardingManager** — onboarding flow state
 
 ```swift
 @MainActor @Observable
@@ -197,26 +259,32 @@ final class CheckInManager {
     private let store: CheckInStore
 
     var checkIns: [CheckInSnapshot] = []
+    var error: CheckInError?
 
-    var todayCheckIn: CheckInSnapshot? {
-        checkIns.first { Calendar.current.isDateInToday($0.date) }
+    var hasCheckedInToday: Bool {
+        checkIns.contains { Calendar.current.isDateInToday($0.date) }
     }
-
-    var canCheckInToday: Bool { todayCheckIn == nil }
 
     init(store: CheckInStore) {
         self.store = store
     }
 
-    func loadCheckIns() async {
-        checkIns = await store.fetchAll()
+    func loadCheckIns() {
+        do {
+            checkIns = try store.fetchAll()
+            error = nil
+        } catch {
+            self.error = .loadFailed
+        }
     }
 
-    func submitCheckIn(rating: Int) async {
-        guard canCheckInToday else { return }
-        let snapshot = CheckInSnapshot(date: .now, rating: rating)
-        await store.save(snapshot)
-        await loadCheckIns()
+    func save(_ snapshot: CheckInSnapshot) {
+        do {
+            try store.save(snapshot)
+            loadCheckIns()
+        } catch {
+            self.error = .saveFailed
+        }
     }
 }
 ```
@@ -237,9 +305,9 @@ Rules:
 ```swift
 @MainActor
 protocol CheckInStore {
-    func fetchAll() async -> [CheckInSnapshot]
-    func save(_ snapshot: CheckInSnapshot) async
-    func delete(_ id: UUID) async
+    func fetchAll() throws -> [CheckInSnapshot]
+    func save(_ snapshot: CheckInSnapshot) throws
+    func delete(_ id: UUID) throws
 }
 
 @MainActor
@@ -250,21 +318,21 @@ final class SwiftDataCheckInStore: CheckInStore {
         self.context = context
     }
 
-    func fetchAll() async -> [CheckInSnapshot] {
+    func fetchAll() throws -> [CheckInSnapshot] {
         let descriptor = FetchDescriptor<CheckIn>(
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
-        let models = (try? context.fetch(descriptor)) ?? []
+        let models = try context.fetch(descriptor)
         return models.map { $0.toSnapshot() }
     }
 
-    func save(_ snapshot: CheckInSnapshot) async {
+    func save(_ snapshot: CheckInSnapshot) throws {
         let model = CheckIn(from: snapshot)
         context.insert(model)
-        try? context.save()
+        try context.save()
     }
 
-    func delete(_ id: UUID) async {
+    func delete(_ id: UUID) throws {
         // fetch and delete
     }
 }
@@ -272,147 +340,105 @@ final class SwiftDataCheckInStore: CheckInStore {
 
 ---
 
-## What is a Domain
+## Manager Topics
 
-A domain is a real concept in the app that has its own data, business rules, and lifecycle. It's something the user creates, modifies, or deletes — a thing that exists independently.
+Each Manager owns one topic. Some topics have persisted data (Store + Snapshots), some don't. The architecture is the same either way — Screens read from the Manager via @Environment.
 
-A domain has:
-- **Data it owns** — persisted state (check-ins, plans, scores)
-- **Business rules** — validation, constraints, state transitions
-- **A lifecycle** — it's created, read, updated, deleted
-- **A Manager** — single source of truth for the domain
-- **A Store** — persistence layer (SwiftData, API, mock)
-- **Snapshots** — immutable structs exposed to Screens
+### StatsManager
 
-Current domains in Off:
-- **Plan** — what the user committed to do (apps, schedule, days)
-- **CheckIn** — daily self-reports (ratings, adherence)
-- **Urge** — intervention sessions (timestamps, responses, outcomes)
-- **Insight** — weekly AI feedback (narrative text, availability)
-- **Attribute** — the six wellness scores (evolution, momentum)
-
-### What is NOT a Domain
-
-Not everything that computes or holds state is a domain. If the logic only **reads** from other domains to produce derived display state — and never creates, modifies, or persists its own data — it's not a domain. It's a **Calculator**.
-
-Test: Does the user ever say "I want to create/edit/delete my [thing]"? If no, it's not a domain.
-
-Examples of things that are NOT domains:
-- Streak calculations (derived from check-ins + plans)
-- Adherence calendars (derived from check-ins + plans)
-- Weekly day cards (derived from check-ins + plans)
-- Urge trend charts (derived from check-ins + interventions)
-
-## Calculators
-
-Calculators are stateless enums with static functions that compute derived state from multiple domains. They have no Store, no persistence, no @Observable state. Screens call them and hold results in @State.
-
-### When to Use a Calculator
-
-Use a Calculator when:
-- The logic reads from 2+ domains to produce display data
-- It doesn't persist anything — purely derived
-- The user never creates, modifies, or deletes the output
-
-Use a Manager when:
-- It owns data with a lifecycle (create, read, update, delete)
-- It has a Store for persistence
-- It has validation and business rules that guard mutations
-
-### Structure
+StatsManager computes and holds derived state from multiple Managers that multiple Screens read. It receives data from other Managers as method parameters and owns the computed results. Screens read via @Environment — no @State for derived data, no duplication across views.
 
 ```swift
-enum StatsCalculator {
+@MainActor @Observable
+final class StatsManager {
 
-    static func streakMetrics(
+    var streakMetrics = AdherenceStreakMetrics(current: 0, bestEver: 0, totalDaysFollowed: 0)
+    var adherenceMonths: [AdherenceMonth] = []
+    var weekDays: [WeekDayState] = []
+    var weekDayCards: [WeekDayCardData] = []
+    var urgeTrend: [Double] = []
+
+    func recalculate(
         checkIns: [CheckInSnapshot],
         activePlan: PlanSnapshot?,
         planHistory: [PlanSnapshot],
-        now: Date = .now
-    ) -> AdherenceStreakMetrics {
-        let history = planHistoryEntries(plans: planHistory, fallbackPlan: activePlan)
-        // ... calculation logic
+        interventions: [UrgeSnapshot]
+    ) {
+        streakMetrics = Self.computeStreakMetrics(
+            checkIns: checkIns,
+            activePlan: activePlan,
+            planHistory: planHistory
+        )
+        adherenceMonths = Self.computeAdherenceMonths(
+            checkIns: checkIns,
+            activePlan: activePlan,
+            planHistory: planHistory
+        )
+        weekDays = Self.computeWeekDays(
+            checkIns: checkIns,
+            activePlan: activePlan,
+            planHistory: planHistory
+        )
+        weekDayCards = Self.computeWeekDayCards(
+            checkIns: checkIns
+        )
+        urgeTrend = Self.computeUrgeTrend(
+            checkIns: checkIns,
+            interventions: interventions
+        )
     }
 
-    static func adherenceMonths(
-        checkIns: [CheckInSnapshot],
-        activePlan: PlanSnapshot?,
-        planHistory: [PlanSnapshot],
-        now: Date = .now
-    ) -> [AdherenceMonth] {
-        // ... calculation logic
-    }
+    // MARK: - Private computation methods
 
-    static func weekDays(
-        checkIns: [CheckInSnapshot],
-        activePlan: PlanSnapshot?,
-        planHistory: [PlanSnapshot],
-        now: Date = .now
-    ) -> [WeekDayState] {
-        // ... calculation logic
-    }
-
-    static func urgeTrend(
-        checkIns: [CheckInSnapshot],
-        interventions: [UrgeSnapshot],
-        now: Date = .now
-    ) -> [Double] {
-        // ... calculation logic
-    }
+    private static func computeStreakMetrics(...) -> AdherenceStreakMetrics { ... }
+    private static func computeAdherenceMonths(...) -> [AdherenceMonth] { ... }
+    private static func computeWeekDays(...) -> [WeekDayState] { ... }
+    private static func computeWeekDayCards(...) -> [WeekDayCardData] { ... }
+    private static func computeUrgeTrend(...) -> [Double] { ... }
 }
 ```
 
-The Screen calls static functions and holds results in @State:
+Screens read directly from StatsManager:
 
 ```swift
-struct ProgressView: View {
-    @Environment(CheckInManager.self) var checkInManager
+struct HomeView: View {
+    @Environment(StatsManager.self) var statsManager
     @Environment(PlanManager.self) var planManager
-    @Environment(AttributeManager.self) var attributeManager
-    @Environment(UrgeManager.self) var urgeManager
+    @Environment(CheckInManager.self) var checkInManager
 
-    @State private var adherenceMonths: [AdherenceMonth] = []
-    @State private var streakMetrics = AdherenceStreakMetrics(current: 0, bestEver: 0, totalDaysFollowed: 0)
-    @State private var urgeTrend: [Double] = []
+    var body: some View {
+        VStack {
+            Text("\(statsManager.streakMetrics.current) day streak")
+
+            ForEach(statsManager.weekDays) { day in
+                dayDot(label: day.label, state: day.state)
+            }
+        }
+    }
+}
+
+struct ProgressView: View {
+    @Environment(StatsManager.self) var statsManager
 
     var body: some View {
         ScrollView {
-            // use @State values directly
-        }
-        .task {
-            adherenceMonths = StatsCalculator.adherenceMonths(
-                checkIns: checkInManager.checkIns,
-                activePlan: planManager.activePlan,
-                planHistory: planManager.planHistory
-            )
-            streakMetrics = StatsCalculator.streakMetrics(
-                checkIns: checkInManager.checkIns,
-                activePlan: planManager.activePlan,
-                planHistory: planManager.planHistory
-            )
-            urgeTrend = StatsCalculator.urgeTrend(
-                checkIns: checkInManager.checkIns,
-                interventions: urgeManager.interventions
-            )
+            // use statsManager.adherenceMonths, statsManager.urgeTrend directly
         }
     }
 }
 ```
 
-### Rules
+### When to recalculate
 
-- Stateless enum with static functions — no @Observable, no stored properties
-- Pure computation — receives snapshots as parameters, returns results
-- No Store, no persistence, no lifecycle
-- Lives in Shared/ not Domains/ — it's a utility, not a domain
-- Screens hold results in @State — the data dies when the screen disappears
-- Multiple Screens can call the same Calculator functions (HomeView uses streakMetrics, ProgressView uses everything)
+StatsManager.recalculate() is called by:
+- **Bootstrap** — on app start and foreground return
+- **onDismiss** — after check-in, plan change, or urge intervention
 
 ---
 
 ## Shared Helpers
 
-Utility logic that is used by 2+ Managers or by both a Manager and a Calculator lives in `Shared/Extensions/`. Never duplicate logic across domains — extract it.
+Utility logic that is used by 2+ Managers lives in `Shared/Extensions/`. Never duplicate logic across Managers — extract it.
 
 Common examples:
 - Date helpers (monday-of-week, week intervals, start-of-day)
@@ -439,16 +465,16 @@ extension Date {
 
 Rules:
 - If 2+ files need the same logic, extract to Shared/Extensions/
-- Managers and Calculators call shared helpers, never reimplement them
+- Managers call shared helpers, never reimplement them
 - Keep helpers pure — no side effects, no state, just input → output
 
 ---
 
 ## Error Handling
 
-Each domain defines its own error enum. Errors flow upward: Store throws → Manager catches → Screen displays.
+Each Manager defines its own error enum. Errors flow upward: Store throws → Manager catches → Screen displays.
 
-### Domain Errors
+### Manager Errors
 
 ```swift
 enum CheckInError: Error, LocalizedError {
@@ -532,7 +558,6 @@ final class CheckInManager {
             let snapshot = CheckInSnapshot(date: .now, rating: rating)
             try store.save(snapshot)
             loadCheckIns()
-            error = nil
         } catch {
             self.error = .saveFailed
         }
@@ -559,7 +584,6 @@ struct CheckInView: View {
             actions: { Button("OK") { manager.error = nil } },
             message: { Text(manager.error?.localizedDescription ?? "") }
         )
-        .task { manager.loadCheckIns() }
     }
 }
 ```
@@ -637,8 +661,7 @@ final class PlanManager {
         do {
             let updated = current.updating(selectedApps: newApps)
             try store.save(updated)
-            activePlan = updated
-            error = nil
+            loadPlan()
         } catch {
             self.error = .saveFailed
         }
@@ -702,7 +725,7 @@ struct CheckInSnapshot: Identifiable, Equatable {
 
 ## App Entry Point
 
-All Managers created once with @State, injected via .environment(). Cross-domain Managers take no init dependencies — they receive data as method parameters at call sites. Bootstrap and refresh logic lives in OffApp, not in any Screen.
+All Managers created once with @State, injected via .environment(). Managers take no init dependencies on other Managers — they receive data as method parameters at call sites. Bootstrap and refresh logic lives in OffApp, not in any Screen.
 
 ```swift
 @main
@@ -711,11 +734,13 @@ struct OffApp: App {
     @Environment(\.scenePhase) var scenePhase
 
     @State private var appState: AppState
-    @State private var checkInManager: CheckInManager
+    @State private var onboardingManager: OnboardingManager
+    @State private var attributeManager: AttributeManager
     @State private var planManager: PlanManager
+    @State private var checkInManager: CheckInManager
     @State private var urgeManager: UrgeManager
     @State private var insightManager: InsightManager
-    @State private var attributeManager: AttributeManager
+    @State private var statsManager: StatsManager
     @State private var bootstrapManager: BootstrapManager
 
     init() {
@@ -729,43 +754,45 @@ struct OffApp: App {
         #endif
 
         _appState = State(initialValue: AppState())
+        _onboardingManager = State(initialValue: OnboardingManager())
+        _statsManager = State(initialValue: StatsManager())
         _bootstrapManager = State(initialValue: BootstrapManager())
 
         switch config {
         case .mock:
-            _checkInManager = State(initialValue: CheckInManager(store: MockCheckInStore()))
-            _planManager = State(initialValue: PlanManager(store: MockPlanStore()))
             _attributeManager = State(initialValue: AttributeManager(store: MockAttributeStore()))
+            _planManager = State(initialValue: PlanManager(store: MockPlanStore()))
+            _checkInManager = State(initialValue: CheckInManager(store: MockCheckInStore()))
             _urgeManager = State(initialValue: UrgeManager(store: MockUrgeStore()))
             _insightManager = State(initialValue: InsightManager(
                 store: MockInsightStore(),
-                aiStore: MockAIStore()
+                aiService: MockAIService()
             ))
 
         case .dev, .prod:
             let schema = Schema([
-                CheckIn.self, Plan.self, TimeWindow.self,
+                AttributeScores.self, Plan.self, CheckIn.self,
                 UrgeIntervention.self, WeeklyInsight.self
             ])
             let modelConfig = ModelConfiguration("Off.store", schema: schema)
             let container = try! ModelContainer(for: schema, configurations: modelConfig)
             let context = container.mainContext
 
-            _checkInManager = State(initialValue: CheckInManager(
-                store: SwiftDataCheckInStore(context: context)
+            _attributeManager = State(initialValue: AttributeManager(
+                store: SwiftDataAttributeStore(context: context)
             ))
             _planManager = State(initialValue: PlanManager(
                 store: SwiftDataPlanStore(context: context)
             ))
-            _attributeManager = State(initialValue: AttributeManager(
-                store: SwiftDataAttributeStore(context: context)
+            _checkInManager = State(initialValue: CheckInManager(
+                store: SwiftDataCheckInStore(context: context)
             ))
             _urgeManager = State(initialValue: UrgeManager(
                 store: SwiftDataUrgeStore(context: context)
             ))
             _insightManager = State(initialValue: InsightManager(
                 store: SwiftDataInsightStore(context: context),
-                aiStore: ClaudeAIStore()
+                aiService: ClaudeAIService()
             ))
         }
     }
@@ -775,18 +802,22 @@ struct OffApp: App {
             AppView()
                 .preferredColorScheme(.light)
                 .environment(appState)
-                .environment(checkInManager)
-                .environment(planManager)
+                .environment(onboardingManager)
                 .environment(attributeManager)
+                .environment(planManager)
+                .environment(checkInManager)
                 .environment(urgeManager)
                 .environment(insightManager)
+                .environment(statsManager)
                 .environment(bootstrapManager)
                 .task {
                     bootstrapManager.bootstrap(
                         planManager: planManager,
                         checkInManager: checkInManager,
                         attributeManager: attributeManager,
-                        insightManager: insightManager
+                        insightManager: insightManager,
+                        urgeManager: urgeManager,
+                        statsManager: statsManager
                     )
                 }
                 .onChange(of: scenePhase) { _, newPhase in
@@ -795,7 +826,9 @@ struct OffApp: App {
                         planManager: planManager,
                         checkInManager: checkInManager,
                         attributeManager: attributeManager,
-                        insightManager: insightManager
+                        insightManager: insightManager,
+                        urgeManager: urgeManager,
+                        statsManager: statsManager
                     )
                 }
         }
@@ -811,7 +844,7 @@ enum BuildConfiguration {
 
 App-level concerns (startup loading, foreground refresh) live in OffApp via a BootstrapManager — never in Screens. This keeps Screens purely presentational.
 
-BootstrapManager is a cross-domain Manager that coordinates sequencing across domains. It receives Managers as parameters because it needs to call methods and read state that changes mid-sequence (e.g. loadPlan() then read activePlan). This is the one exception where passing whole Managers instead of snapshots is valid.
+BootstrapManager coordinates startup sequencing across Managers. It receives Managers as method parameters (not stored references) because it needs to call methods and read state that changes mid-sequence (e.g. loadPlan() then read activePlan).
 
 ```swift
 @MainActor @Observable
@@ -821,14 +854,14 @@ final class BootstrapManager {
         planManager: PlanManager,
         checkInManager: CheckInManager,
         attributeManager: AttributeManager,
-        insightManager: InsightManager
+        insightManager: InsightManager,
+        urgeManager: UrgeManager,
+        statsManager: StatsManager
     ) {
         planManager.loadPlan()
         attributeManager.loadScores()
-        checkInManager.boot(
-            plan: planManager.activePlan,
-            planHistory: planManager.planHistory
-        )
+        checkInManager.loadCheckIns()
+        urgeManager.loadInterventions()
         attributeManager.runWeeklyEvolutionIfNeeded(
             plan: planManager.activePlan,
             checkIns: checkInManager.checkIns
@@ -836,6 +869,12 @@ final class BootstrapManager {
         insightManager.checkWeeklyInsightAvailability(
             plan: planManager.activePlan,
             checkIns: checkInManager.checkIns
+        )
+        statsManager.recalculate(
+            checkIns: checkInManager.checkIns,
+            activePlan: planManager.activePlan,
+            planHistory: planManager.planHistory,
+            interventions: urgeManager.interventions
         )
     }
 
@@ -843,13 +882,13 @@ final class BootstrapManager {
         planManager: PlanManager,
         checkInManager: CheckInManager,
         attributeManager: AttributeManager,
-        insightManager: InsightManager
+        insightManager: InsightManager,
+        urgeManager: UrgeManager,
+        statsManager: StatsManager
     ) {
+        planManager.loadPlan()
         checkInManager.loadCheckIns()
-        checkInManager.boot(
-            plan: planManager.activePlan,
-            planHistory: planManager.planHistory
-        )
+        urgeManager.loadInterventions()
         attributeManager.runWeeklyEvolutionIfNeeded(
             plan: planManager.activePlan,
             checkIns: checkInManager.checkIns
@@ -857,6 +896,12 @@ final class BootstrapManager {
         insightManager.checkWeeklyInsightAvailability(
             plan: planManager.activePlan,
             checkIns: checkInManager.checkIns
+        )
+        statsManager.recalculate(
+            checkIns: checkInManager.checkIns,
+            activePlan: planManager.activePlan,
+            planHistory: planManager.planHistory,
+            interventions: urgeManager.interventions
         )
     }
 }
@@ -866,33 +911,46 @@ final class BootstrapManager {
 
 ## Preview System
 
-One PreviewContainer, one .withPreviewManagers() modifier. PreviewContainer only wires Managers with mock Stores — it does not call any loading methods. Mock Stores provide seed data through their initializers, so previews render immediately without needing .task to fire. The rule "Screens handle their own loading via .task" applies to the real app flow, not previews.
+One PreviewContainer, one .withPreviewManagers() modifier. PreviewContainer wires Managers with mock Stores and runs the same bootstrap as the real app. This guarantees previews display data without Screens needing their own .task load calls.
 
 ```swift
 @MainActor
 struct PreviewContainer {
     static let appState = AppState()
-    static let checkInManager = CheckInManager(store: MockCheckInStore())
-    static let planManager = PlanManager(store: MockPlanStore())
+    static let onboardingManager = OnboardingManager()
     static let attributeManager = AttributeManager(store: MockAttributeStore())
+    static let planManager = PlanManager(store: MockPlanStore())
+    static let checkInManager = CheckInManager(store: MockCheckInStore())
     static let urgeManager = UrgeManager(store: MockUrgeStore())
-    static let insightManager = InsightManager(
-        store: MockInsightStore(),
-        aiStore: MockAIStore()
-    )
+    static let insightManager = InsightManager(store: MockInsightStore(), aiService: MockAIService())
+    static let statsManager = StatsManager()
     static let bootstrapManager = BootstrapManager()
+
+    static func bootstrap() {
+        bootstrapManager.bootstrap(
+            planManager: planManager,
+            checkInManager: checkInManager,
+            attributeManager: attributeManager,
+            insightManager: insightManager,
+            urgeManager: urgeManager,
+            statsManager: statsManager
+        )
+    }
 }
 
 extension View {
     func withPreviewManagers() -> some View {
         self
             .environment(PreviewContainer.appState)
-            .environment(PreviewContainer.checkInManager)
-            .environment(PreviewContainer.planManager)
+            .environment(PreviewContainer.onboardingManager)
             .environment(PreviewContainer.attributeManager)
+            .environment(PreviewContainer.planManager)
+            .environment(PreviewContainer.checkInManager)
             .environment(PreviewContainer.urgeManager)
             .environment(PreviewContainer.insightManager)
+            .environment(PreviewContainer.statsManager)
             .environment(PreviewContainer.bootstrapManager)
+            .task { PreviewContainer.bootstrap() }
     }
 }
 
@@ -940,7 +998,7 @@ Components/                           ← Reusable views used in 2+ screens
   StreakCard.swift
   RatingBadge.swift
 
-Domains/                              ← ALL logic + data, flat per domain
+Managers/                              ← ALL logic + data, flat per manager
   CheckIn/
     CheckInManager.swift
     CheckInStore.swift
@@ -953,13 +1011,18 @@ Domains/                              ← ALL logic + data, flat per domain
   Plan/
     PlanManager.swift
     PlanStore.swift
-    Plan.swift
-    TimeWindow.swift                  ← @Model
+    Plan.swift                        ← @Model
     PlanSnapshot.swift
     PlanSnapshot+Samples.swift
     MockPlanStore.swift
     PlanAdherence.swift
     TimeBoundary.swift
+  Attribute/
+    AttributeManager.swift
+    AttributeStore.swift
+    AttributeScores.swift             ← @Model
+    AttributeScoresSnapshot.swift
+    MockAttributeStore.swift
   Urge/
     UrgeManager.swift
     UrgeStore.swift
@@ -975,13 +1038,16 @@ Domains/                              ← ALL logic + data, flat per domain
     InsightSnapshot.swift
     InsightSnapshot+Samples.swift
     MockInsightStore.swift
-    ClaudeAIStore.swift
-    MockAIStore.swift
+    ClaudeAIService.swift
+    MockAIService.swift
+  Onboarding/
+    OnboardingManager.swift           ← ephemeral flow state, no Store
+  Stats/
+    StatsManager.swift                ← derived state from multiple managers, no Store
   Bootstrap/
     BootstrapManager.swift            ← app startup + refresh sequencing, no Store
 
 Shared/
-  StatsCalculator.swift               ← stateless cross-domain calculations (streaks, adherence, trends)
   Preview/
     PreviewContainer.swift
   Extensions/
@@ -998,26 +1064,28 @@ Shared/
 
 - Screen never touches SwiftData → Screen only sees Snapshots
 - Screen holds only local UI state → @State for UI-only concerns (selection, toggles, search text)
-- Domain state lives in Manager → data, computed properties, business logic
+- Screen never holds cross-manager derived state → read from StatsManager via @Environment
+- State lives in Managers → data, computed properties, business logic
+- Manager owns a topic → one Manager per topic, Store is optional
 - Manager never imports SwiftUI → Manager is plain @MainActor @Observable
 - Store has no state → Protocol only has throwing functions
-- One source of truth per domain → One Manager, multiple Screens read it
-- Domains own data with a lifecycle → Manager + Store + Snapshots
-- Cross-domain derived state → StatsCalculator (stateless enum), not a Manager
+- One source of truth per topic → One Manager, multiple Screens read it
+- Cross-manager derived state → StatsManager, not duplicated in views
 - Managers never reference other Managers → receive external data as method parameters
 - Bootstrap and refresh live in OffApp via BootstrapManager → never in Screens
+- Screens never call Manager load methods in .task → bootstrap handles it
+- Managers reload after every save → save to Store, then call load method, never update state in-place
 - Error flow → Store throws, Manager catches and sets error property, Screen displays
 - No force unwraps → guard let, if let, nil coalescing only
 - Managers survive re-renders → @State in OffApp
 - MOCK/DEV/PROD switching → Compiler flags in OffApp.init()
-- Previews work instantly → PreviewContainer + .withPreviewManagers()
-- Screens handle their own loading → .task in each Screen, not in PreviewContainer
-- Screens stay dumb → Screens call methods, never orchestrate logic
+- Previews work instantly → PreviewContainer + .withPreviewManagers() runs same bootstrap as real app
+- Screens stay dumb → Screens read Managers and call methods, never orchestrate logic
 - Large Views → Split into computed properties first, then private child Views, then Components/
 - Components/ → Only for Views reused in 2+ screens
 - Flat folders → Subfolder only when 10+ files
 - No duplicated logic → if 2+ files need it, extract to Shared/Extensions/
 - Need to change looks? → Screens/
-- Need to change logic? → Domains/
-- Need to change data source? → Domains/ → Store file
+- Need to change logic? → Managers/
+- Need to change data source? → Managers/ → Store file
 - No unit tests. This project does not use XCTest, test targets, or test-driven abstractions—validation is done via previews, mocks, and real usage only.

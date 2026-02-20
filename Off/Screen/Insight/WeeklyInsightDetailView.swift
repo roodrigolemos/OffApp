@@ -38,7 +38,7 @@ struct WeeklyInsightDetailView: View {
         }
         .background(Color.offBackgroundPrimary)
         .task {
-            await insightManager.loadInsight(
+            await insightManager.prepareInsightIfNeeded(
                 plan: planManager.activePlan,
                 checkIns: checkInManager.checkIns,
                 interventions: urgeManager.interventions

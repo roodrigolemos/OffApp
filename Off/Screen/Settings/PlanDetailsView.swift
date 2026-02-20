@@ -8,6 +8,10 @@ import SwiftUI
 struct PlanDetailsView: View {
 
     @Environment(PlanManager.self) var planManager
+    @Environment(CheckInManager.self) var checkInManager
+    @Environment(UrgeManager.self) var urgeManager
+    @Environment(InsightManager.self) var insightManager
+    @Environment(StatsManager.self) var statsManager
 
     @State private var showPlanSelection = false
 
@@ -44,7 +48,19 @@ struct PlanDetailsView: View {
                 }
             }
         }
-        .fullScreenCover(isPresented: $showPlanSelection) {
+        .fullScreenCover(isPresented: $showPlanSelection, onDismiss: {
+            planManager.loadPlan()
+            statsManager.recalculate(
+                checkIns: checkInManager.checkIns,
+                activePlan: planManager.activePlan,
+                planHistory: planManager.planHistory,
+                interventions: urgeManager.interventions
+            )
+            insightManager.checkWeeklyInsightAvailability(
+                plan: planManager.activePlan,
+                checkIns: checkInManager.checkIns
+            )
+        }) {
             NavigationStack {
                 PlanSelectionView(dismissFlow: $showPlanSelection)
                     .toolbar {

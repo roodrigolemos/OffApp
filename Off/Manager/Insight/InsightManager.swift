@@ -23,7 +23,7 @@ final class InsightManager {
         self.aiService = aiService
     }
 
-    // MARK: - Availability (called from HomeView .task)
+    // MARK: - Availability
 
     func checkWeeklyInsightAvailability(plan: PlanSnapshot?, checkIns: [CheckInSnapshot]) {
         let lastMonday = Date.lastWeekMonday()
@@ -59,9 +59,9 @@ final class InsightManager {
         weeklyInsightState = .viewed
     }
 
-    // MARK: - Load / Generate (called from WeeklyInsightDetailView .task)
+    // MARK: - Load / Generate (triggered from WeeklyInsightDetailView .task)
 
-    func loadInsight(
+    func prepareInsightIfNeeded(
         plan: PlanSnapshot?,
         checkIns: [CheckInSnapshot],
         interventions: [UrgeSnapshot]

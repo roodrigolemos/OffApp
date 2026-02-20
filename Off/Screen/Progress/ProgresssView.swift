@@ -11,16 +11,11 @@ import Charts
 struct ProgresssView: View {
 
     @Environment(AttributeManager.self) var attributeManager
-    @Environment(PlanManager.self) var planManager
-    @Environment(CheckInManager.self) var checkInManager
-    @Environment(UrgeManager.self) var urgeManager
+    @Environment(StatsManager.self) var statsManager
 
     @State private var showArchive: Bool = false
     @State private var isUsageExpanded: Bool = false
     @State private var selectedMonthIndex: Int = 0
-    @State private var adherenceMonths: [AdherenceMonth] = []
-    @State private var adherenceMetrics = AdherenceStreakMetrics(current: 0, bestEver: 0, totalDaysFollowed: 0)
-    @State private var urgeData: [Double] = Array(repeating: 0, count: 30)
 
     var body: some View {
         NavigationStack {
@@ -40,21 +35,6 @@ struct ProgresssView: View {
                     .padding(.bottom, 48)
                 }
                 .scrollIndicators(.hidden)
-            }
-            .task {
-                refreshDerivedData()
-            }
-            .onChange(of: checkInManager.checkIns) { _, _ in
-                refreshDerivedData()
-            }
-            .onChange(of: planManager.activePlan) { _, _ in
-                refreshDerivedData()
-            }
-            .onChange(of: planManager.planHistory) { _, _ in
-                refreshDerivedData()
-            }
-            .onChange(of: urgeManager.interventions) { _, _ in
-                refreshDerivedData()
             }
         }
     }
@@ -264,7 +244,7 @@ private extension ProgresssView {
     }
 
     var monthNavigationHeader: some View {
-        let monthCount = adherenceMonths.count
+        let monthCount = statsManager.adherenceMonths.count
         let selected = selectedAdherenceMonth
         let maxIndex = max(monthCount - 1, 0)
 
@@ -405,7 +385,7 @@ private extension ProgresssView {
                             )
                     }
 
-                    Text("\(adherenceMetrics.totalDaysFollowed)")
+                    Text("\(statsManager.streakMetrics.totalDaysFollowed)")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Color.offTextPrimary)
                 }
@@ -427,7 +407,7 @@ private extension ProgresssView {
     }
 
     var currentStreakCard: some View {
-        let streakInfo = adherenceMetrics
+        let streakInfo = statsManager.streakMetrics
 
         return ZStack {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -495,7 +475,7 @@ private extension ProgresssView {
     }
 
     var bestEverStreakCard: some View {
-        let streakInfo = adherenceMetrics
+        let streakInfo = statsManager.streakMetrics
 
         return ZStack {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -616,7 +596,7 @@ private extension ProgresssView {
 
     @ViewBuilder
     var urgeChart: some View {
-        let points = urgeData.enumerated().map { ChartPoint(id: $0.offset, value: $0.element) }
+        let points = statsManager.urgeTrend.enumerated().map { ChartPoint(id: $0.offset, value: $0.element) }
         if let minPoint = points.min(by: { $0.value < $1.value }),
            let maxPoint = points.max(by: { $0.value < $1.value }) {
             Chart {
@@ -1092,12 +1072,8 @@ private extension ProgresssView {
     }
 
     var selectedAdherenceMonth: AdherenceMonth {
-        if adherenceMonths.isEmpty {
-            return StatsCalculator.adherenceMonths(
-                checkIns: [],
-                activePlan: nil,
-                planHistory: []
-            ).first ?? AdherenceMonth(
+        if statsManager.adherenceMonths.isEmpty {
+            return AdherenceMonth(
                 id: "fallback",
                 displayName: Date.now.formatted(.dateTime.month(.wide).year()),
                 cells: [],
@@ -1106,8 +1082,9 @@ private extension ProgresssView {
                 percentage: 0
             )
         }
-        let index = min(max(selectedMonthIndex, 0), max(adherenceMonths.count - 1, 0))
-        return adherenceMonths[index]
+        let monthCount = statsManager.adherenceMonths.count
+        let index = min(max(selectedMonthIndex, 0), max(monthCount - 1, 0))
+        return statsManager.adherenceMonths[index]
     }
 
     func adherenceFillColor(for state: AdherenceCellState) -> Color {
@@ -1135,24 +1112,6 @@ private extension ProgresssView {
         case .offFollowed, .todayNeutral: return 1
         default: return 0
         }
-    }
-
-    func refreshDerivedData() {
-        adherenceMetrics = StatsCalculator.streakMetrics(
-            checkIns: checkInManager.checkIns,
-            activePlan: planManager.activePlan,
-            planHistory: planManager.planHistory
-        )
-        adherenceMonths = StatsCalculator.adherenceMonths(
-            checkIns: checkInManager.checkIns,
-            activePlan: planManager.activePlan,
-            planHistory: planManager.planHistory
-        )
-        urgeData = StatsCalculator.urgeTrend(
-            checkIns: checkInManager.checkIns,
-            interventions: urgeManager.interventions
-        )
-        selectedMonthIndex = min(selectedMonthIndex, max(adherenceMonths.count - 1, 0))
     }
 
     var usageTrendData: [Double] {
