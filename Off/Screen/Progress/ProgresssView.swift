@@ -28,9 +28,9 @@ struct ProgresssView: View {
                         attributeTrendsSection
                         planAdherenceSection
                         urgePatternSection
+                        usageDataSection
                         weeklyFeedbackSection
                         checkInHistorySection
-                        usageDataSection
                     }
                     .padding(.bottom, 48)
                 }
@@ -82,7 +82,6 @@ private extension ProgresssView {
 
             adherenceCalendarCard
             streakCardsRow
-            adherenceInsightCard
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 36)
@@ -541,38 +540,7 @@ private extension ProgresssView {
         )
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
-
-    var adherenceInsightCard: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.offBackgroundSecondary)
-
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(Color.offAccent.opacity(0.12))
-                        .frame(width: 36, height: 36)
-
-                    Image(systemName: "lightbulb.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Color.offAccent)
-                }
-
-                Text("You follow your plan more on weekdays")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Color.offTextPrimary)
-                    .lineSpacing(2)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(20)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.offStroke, lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
-    }
-
+    
     var urgePatternCard: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
