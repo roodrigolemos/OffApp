@@ -35,3 +35,38 @@ struct AdherenceMonth: Identifiable, Equatable {
     let denominator: Int
     let percentage: Int
 }
+
+struct UrgeTrendPoint: Identifiable, Equatable {
+    let id: Int
+    let dayIndex: Int
+    let value: Double
+}
+
+enum UrgeTrendDirection: Equatable {
+    case decreasing
+    case increasing
+    case stable
+    case insufficientData
+
+    var message: String {
+        switch self {
+        case .decreasing:
+            return "Your urges have been easing compared to last week"
+        case .increasing:
+            return "Your urges have been stronger compared to last week"
+        case .stable:
+            return "Your urges have been steady compared to last week"
+        case .insufficientData:
+            return "Not enough check-ins this week to update your trend."
+        }
+    }
+}
+
+struct UrgeInsightsSnapshot: Equatable {
+    let trendDirection: UrgeTrendDirection
+    let urgeAdherenceMessage: String?
+
+    var trendDirectionMessage: String {
+        trendDirection.message
+    }
+}

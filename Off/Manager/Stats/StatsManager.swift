@@ -19,7 +19,11 @@ final class StatsManager {
     var adherenceMonths: [AdherenceMonth] = []
     var weekDays: [WeekDayState] = []
     var weekDayCards: [WeekDayCardData] = []
-    var urgeTrend: [Double] = Array(repeating: 0, count: 30)
+    var urgeTrendPoints: [UrgeTrendPoint] = []
+    var urgeInsights = UrgeInsightsSnapshot(
+        trendDirection: .insufficientData,
+        urgeAdherenceMessage: nil
+    )
     
     func recalculate(
         checkIns: [CheckInSnapshot],
@@ -27,6 +31,7 @@ final class StatsManager {
         planHistory: [PlanSnapshot],
         interventions: [UrgeSnapshot]
     ) {
+        _ = interventions
         streakMetrics = computeStreakMetrics(
             checkIns: checkIns,
             activePlan: activePlan,
@@ -45,9 +50,16 @@ final class StatsManager {
         weekDayCards = computeWeekDayCards(
             checkIns: checkIns
         )
-        urgeTrend = computeUrgeTrend(
-            checkIns: checkIns,
-            interventions: interventions
+        urgeTrendPoints = computeUrgeTrendPoints(
+            checkIns: checkIns
+        )
+        urgeInsights = UrgeInsightsSnapshot(
+            trendDirection: computeUrgeTrendDirection(
+                checkIns: checkIns
+            ),
+            urgeAdherenceMessage: computeUrgeAdherenceMessage(
+                checkIns: checkIns
+            )
         )
     }
     
@@ -189,45 +201,127 @@ final class StatsManager {
         return months
     }
 
-    func computeUrgeTrend(
+    func computeUrgeTrendPoints(
         checkIns: [CheckInSnapshot],
-        interventions: [UrgeSnapshot],
         now: Date = .now
-    ) -> [Double] {
+    ) -> [UrgeTrendPoint] {
         let calendar = mondayCalendar()
         let today = calendar.startOfDay(for: now)
+        guard let windowStart = calendar.date(byAdding: .day, value: -29, to: today) else { return [] }
         let checkInsByDate = checkInsByDay(checkIns, calendar: calendar)
 
-        var interventionCountByDate: [Date: Int] = [:]
-        for intervention in interventions {
-            let day = calendar.startOfDay(for: intervention.timestamp)
-            interventionCountByDate[day, default: 0] += 1
+        var points: [UrgeTrendPoint] = []
+        for dayIndex in 0..<30 {
+            guard let day = calendar.date(byAdding: .day, value: dayIndex, to: windowStart) else { continue }
+            let dayStart = calendar.startOfDay(for: day)
+            guard let checkIn = checkInsByDate[dayStart] else { continue }
+
+            points.append(
+                UrgeTrendPoint(
+                    id: dayIndex,
+                    dayIndex: dayIndex,
+                    value: Double(checkIn.urgeLevel.rawValue)
+                )
+            )
+        }
+        return points
+    }
+
+    func computeUrgeTrendDirection(
+        checkIns: [CheckInSnapshot],
+        now: Date = .now
+    ) -> UrgeTrendDirection {
+        let calendar = mondayCalendar()
+        let checkInsByDate = checkInsByDay(checkIns, calendar: calendar)
+
+        let currentWeekMonday = calendar.startOfDay(for: Date.thisWeekMonday(now: now))
+        guard let lastWeekStart = calendar.date(byAdding: .day, value: -7, to: currentWeekMonday),
+              let previousWeekStart = calendar.date(byAdding: .day, value: -14, to: currentWeekMonday) else {
+            return .insufficientData
         }
 
+        let lastWeekValues = urgeValues(
+            from: checkInsByDate,
+            startInclusive: lastWeekStart,
+            endExclusive: currentWeekMonday,
+            calendar: calendar
+        )
+        let previousWeekValues = urgeValues(
+            from: checkInsByDate,
+            startInclusive: previousWeekStart,
+            endExclusive: lastWeekStart,
+            calendar: calendar
+        )
+
+        guard lastWeekValues.count >= 4, previousWeekValues.count >= 4 else {
+            return .insufficientData
+        }
+
+        let difference = average(lastWeekValues) - average(previousWeekValues)
+
+        if difference <= -0.3 {
+            return .decreasing
+        }
+        if difference >= 0.3 {
+            return .increasing
+        }
+        return .stable
+    }
+
+    func computeUrgeAdherenceMessage(
+        checkIns: [CheckInSnapshot],
+        now: Date = .now
+    ) -> String? {
+        let calendar = mondayCalendar()
+        let today = calendar.startOfDay(for: now)
+        guard let windowStart = calendar.date(byAdding: .day, value: -29, to: today) else { return nil }
+
+        let windowCheckIns = checkIns.filter { checkIn in
+            let day = calendar.startOfDay(for: checkIn.date)
+            return day >= windowStart && day <= today
+        }
+        let qualifyingDays = windowCheckIns.filter {
+            $0.wasPlanDay && $0.urgeLevel.rawValue >= 2
+        }
+
+        guard qualifyingDays.count >= 4 else { return nil }
+
+        let followedCount = qualifyingDays.filter {
+            $0.planAdherence == .yes || $0.planAdherence == .partially
+        }.count
+        let followedPercentage = (Double(followedCount) / Double(qualifyingDays.count)) * 100.0
+
+        if followedPercentage >= 70 {
+            return "When urges hit hard, you followed your plan most of the time"
+        }
+        if followedPercentage >= 40 {
+            return "On tough urge days, you followed your plan about half the time"
+        }
+        return "Strong urges made it harder to stick to your plan"
+    }
+
+    func urgeValues(
+        from checkInsByDate: [Date: CheckInSnapshot],
+        startInclusive: Date,
+        endExclusive: Date,
+        calendar: Calendar
+    ) -> [Double] {
         var values: [Double] = []
-        var previousValue = 0.0
+        var cursor = calendar.startOfDay(for: startInclusive)
 
-        for daysBack in stride(from: 29, through: 0, by: -1) {
-            guard let date = calendar.date(byAdding: .day, value: -daysBack, to: today) else { continue }
-            let day = calendar.startOfDay(for: date)
-
-            let value: Double
-            if let checkIn = checkInsByDate[day] {
-                value = Double(checkIn.urgeLevel.rawValue)
-            } else if let interventionCount = interventionCountByDate[day], interventionCount > 0 {
-                value = min(3.0, 1.0 + Double(interventionCount) * 0.5)
-            } else {
-                value = previousValue
+        while cursor < endExclusive {
+            if let checkIn = checkInsByDate[cursor] {
+                values.append(Double(checkIn.urgeLevel.rawValue))
             }
-
-            values.append(value)
-            previousValue = value
-        }
-
-        if values.isEmpty {
-            return Array(repeating: 0, count: 30)
+            guard let nextDay = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = nextDay
         }
         return values
+    }
+
+    func average(_ values: [Double]) -> Double {
+        guard !values.isEmpty else { return 0 }
+        return values.reduce(0, +) / Double(values.count)
     }
     
     func mondayCalendar() -> Calendar {

@@ -578,12 +578,13 @@ private extension ProgresssView {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(Color.offBackgroundSecondary)
 
-            VStack(alignment: .leading, spacing: 14) {
-                Text("30-Day Urge Trend")
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Urge Trend")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(Color.offTextPrimary)
 
                 urgeChart
+                urgeInsightsText
             }
             .padding(20)
         }
@@ -594,77 +595,76 @@ private extension ProgresssView {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
-    @ViewBuilder
     var urgeChart: some View {
-        let points = statsManager.urgeTrend.enumerated().map { ChartPoint(id: $0.offset, value: $0.element) }
-        if let minPoint = points.min(by: { $0.value < $1.value }),
-           let maxPoint = points.max(by: { $0.value < $1.value }) {
-            Chart {
-                ForEach(points) { point in
-                    AreaMark(
-                        x: .value("Day", point.id),
-                        y: .value("Urge", point.value)
-                    )
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                Color.offWarn.opacity(0.12),
-                                Color.offWarn.opacity(0.03),
-                                Color.offWarn.opacity(0.01)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                }
-
-                ForEach(points) { point in
-                    LineMark(
-                        x: .value("Day", point.id),
-                        y: .value("Urge", point.value)
-                    )
-                    .interpolationMethod(.catmullRom)
-                    .lineStyle(StrokeStyle(lineWidth: 2.0, lineCap: .round))
-                    .foregroundStyle(Color.offWarn)
-                }
-
-                PointMark(
-                    x: .value("Day", minPoint.id),
-                    y: .value("Urge", minPoint.value)
+        Chart {
+            ForEach(statsManager.urgeTrendPoints) { point in
+                AreaMark(
+                    x: .value("Day", point.dayIndex),
+                    y: .value("Urge", point.value)
                 )
-                .foregroundStyle(Color.offSuccess)
-                .symbolSize(60)
-
-                PointMark(
-                    x: .value("Day", maxPoint.id),
-                    y: .value("Urge", maxPoint.value)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            Color.offWarn.opacity(0.12),
+                            Color.offWarn.opacity(0.03),
+                            Color.offWarn.opacity(0.01)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
                 )
+            }
+
+            ForEach(statsManager.urgeTrendPoints) { point in
+                LineMark(
+                    x: .value("Day", point.dayIndex),
+                    y: .value("Urge", point.value)
+                )
+                .interpolationMethod(.catmullRom)
+                .lineStyle(StrokeStyle(lineWidth: 2.0, lineCap: .round))
                 .foregroundStyle(Color.offWarn)
-                .symbolSize(60)
             }
-            .chartYScale(domain: 0...3)
-            .chartXAxis(.hidden)
-            .chartYAxis {
-                AxisMarks(values: [0, 1, 2, 3]) { value in
-                    AxisValueLabel {
-                        Text(urgeLabel(for: value.as(Int.self) ?? 0))
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(Color.offTextMuted.opacity(0.7))
-                    }
-                    AxisGridLine()
-                        .foregroundStyle(Color.offStroke.opacity(0.15))
-                }
-            }
-            .chartPlotStyle { plotArea in
-                plotArea
-                    .background(Color.clear)
-                    .cornerRadius(12)
-            }
-            .padding(.vertical, 8)
-            .frame(height: 140)
-        } else {
-            EmptyView()
         }
+        .chartXScale(domain: 0...29)
+        .chartYScale(domain: 0...3)
+        .chartXAxis(.hidden)
+        .chartYAxis {
+            AxisMarks(values: [0, 1, 2, 3]) { value in
+                AxisValueLabel {
+                    Text(urgeLabel(for: value.as(Int.self) ?? 0))
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(Color.offTextMuted.opacity(0.7))
+                }
+                AxisGridLine()
+                    .foregroundStyle(Color.offStroke.opacity(0.15))
+            }
+        }
+        .chartPlotStyle { plotArea in
+            plotArea
+                .background(Color.clear)
+                .cornerRadius(12)
+        }
+        .padding(.vertical, 8)
+        .frame(height: 140)
+    }
+
+    var urgeInsightsText: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(statsManager.urgeInsights.trendDirectionMessage)
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(Color.offTextMuted)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if let urgeAdherenceMessage = statsManager.urgeInsights.urgeAdherenceMessage {
+                Text(urgeAdherenceMessage)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(Color.offTextMuted)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     var weeklyFeedbackCard: some View {
@@ -1065,9 +1065,9 @@ private extension ProgresssView {
     func urgeLabel(for index: Int) -> String {
         switch index {
         case 0: return "None"
-        case 1: return "Notice"
-        case 2: return "Persist"
-        default: return "Took over"
+        case 1: return "Mild"
+        case 2: return "Moderate"
+        default: return "Strong"
         }
     }
 
