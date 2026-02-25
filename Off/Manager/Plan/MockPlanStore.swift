@@ -19,12 +19,12 @@ final class MockPlanStore: PlanStore {
 
         return [
             PlanSnapshot(
-                preset: .morningFocus,
+                preset: .weekdayDetox,
                 selectedApps: [.instagram, .tiktok, .youtube],
                 createdAt: fortyFiveDaysAgo
             ),
             PlanSnapshot(
-                preset: .eveningWindDown,
+                preset: .lunchBreakOnly,
                 selectedApps: [.instagram, .tiktok, .youtube],
                 createdAt: twentyDaysAgo,
                 firstPlanCreatedAt: fortyFiveDaysAgo

@@ -16,8 +16,6 @@ final class Plan {
 
     var name: String
     var timeBoundaryRaw: String
-    var afterTimeHour: Int?
-    var afterTimeMinute: Int?
     var timeWindowsData: [[String: Int]]
     var daysRaw: Int
     var removeFromHomeScreen: Bool
@@ -33,8 +31,6 @@ final class Plan {
         self.createdAt = snapshot.createdAt
         self.name = snapshot.name
         self.timeBoundaryRaw = snapshot.timeBoundary.rawValue
-        self.afterTimeHour = snapshot.afterTime?.hour
-        self.afterTimeMinute = snapshot.afterTime?.minute
         self.timeWindowsData = snapshot.timeWindows.map { tw in
             ["sh": tw.startHour, "sm": tw.startMinute, "eh": tw.endHour, "em": tw.endMinute]
         }
@@ -46,12 +42,9 @@ final class Plan {
         self.icon = snapshot.icon
     }
 
-    func toSnapshot() -> PlanSnapshot {
-        let afterTime: TimeValue?
-        if let h = afterTimeHour, let m = afterTimeMinute {
-            afterTime = TimeValue(hour: h, minute: m)
-        } else {
-            afterTime = nil
+    func toSnapshot() -> PlanSnapshot? {
+        guard let timeBoundary = TimeBoundary(rawValue: timeBoundaryRaw) else {
+            return nil
         }
 
         let windows = timeWindowsData.compactMap { dict -> TimeWindowValue? in
@@ -74,8 +67,7 @@ final class Plan {
             selectedApps: Set(selectedAppsRaw.compactMap { SocialApp(rawValue: $0) }),
             name: name,
             icon: icon,
-            timeBoundary: TimeBoundary(rawValue: timeBoundaryRaw) ?? .anytime,
-            afterTime: afterTime,
+            timeBoundary: timeBoundary,
             timeWindows: windows,
             days: DaysOfWeek(rawValue: daysRaw),
             phoneBehavior: behavior

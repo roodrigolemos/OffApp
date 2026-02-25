@@ -14,7 +14,6 @@ struct PlanSnapshot: Equatable {
     let name: String
     let icon: String?
     let timeBoundary: TimeBoundary
-    let afterTime: TimeValue?
     let timeWindows: [TimeWindowValue]
     let days: DaysOfWeek
     let phoneBehavior: PhoneBehavior
@@ -28,7 +27,6 @@ struct PlanSnapshot: Equatable {
         name: String,
         icon: String? = nil,
         timeBoundary: TimeBoundary,
-        afterTime: TimeValue?,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
         phoneBehavior: PhoneBehavior
@@ -40,7 +38,6 @@ struct PlanSnapshot: Equatable {
         self.name = name
         self.icon = icon
         self.timeBoundary = timeBoundary
-        self.afterTime = afterTime
         self.timeWindows = timeWindows
         self.days = days
         self.phoneBehavior = phoneBehavior
@@ -55,7 +52,6 @@ struct PlanSnapshot: Equatable {
         self.name = preset.name
         self.icon = nil
         self.timeBoundary = preset.timeBoundary
-        self.afterTime = preset.afterTime
         self.timeWindows = preset.timeWindows
         self.days = preset.days
         self.phoneBehavior = preset.phoneBehavior

@@ -245,15 +245,8 @@ private extension PlanDetailsView {
 
     func timeDescription(_ plan: PlanSnapshot) -> String {
         switch plan.timeBoundary {
-        case .anytime:
-            return "Anytime"
         case .never:
             return "Never allowed"
-        case .afterTime:
-            if let after = plan.afterTime {
-                return "After \(formatTime(hour: after.hour, minute: after.minute))"
-            }
-            return "After a set time"
         case .duringWindows:
             if plan.timeWindows.isEmpty { return "During set windows" }
             return plan.timeWindows.map { window in

@@ -826,18 +826,10 @@ private extension HomeView {
 
     func planCardWhenText(for plan: PlanSnapshot) -> String? {
         switch plan.timeBoundary {
-        case .afterTime:
-            guard let time = plan.afterTime else { return nil }
-            let hour = time.hour > 12 ? time.hour - 12 : time.hour
-            let period = time.hour >= 12 ? "PM" : "AM"
-            let minuteStr = time.minute > 0 ? ":\(String(format: "%02d", time.minute))" : ""
-            return "After \(hour)\(minuteStr) \(period)"
         case .duringWindows:
             return "During set windows"
         case .never:
             return "Never"
-        case .anytime:
-            return nil
         }
     }
 

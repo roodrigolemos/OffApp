@@ -27,7 +27,7 @@ final class SwiftDataPlanStore: PlanStore {
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
         let models = try context.fetch(descriptor)
-        return models.first?.toSnapshot()
+        return models.compactMap { $0.toSnapshot() }.first
     }
 
     func fetchAllPlans() throws -> [PlanSnapshot] {
@@ -35,7 +35,7 @@ final class SwiftDataPlanStore: PlanStore {
             sortBy: [SortDescriptor(\.createdAt, order: .forward)]
         )
         let models = try context.fetch(descriptor)
-        return models.map { $0.toSnapshot() }
+        return models.compactMap { $0.toSnapshot() }
     }
 
     func save(_ snapshot: PlanSnapshot) throws {

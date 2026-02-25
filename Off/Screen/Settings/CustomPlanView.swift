@@ -14,8 +14,7 @@ struct CustomPlanView: View {
     @State private var planName = ""
     @State private var selectedIcon = "gearshape.fill"
     
-    @State private var timeBoundary: TimeBoundary = .afterTime
-    @State private var afterTime = Calendar.current.date(from: DateComponents(hour: 20, minute: 0)) ?? .now
+    @State private var timeBoundary: TimeBoundary = .duringWindows
     @State private var timeWindows: [TimeWindowValue] = [TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)]
     @State private var days: DaysOfWeek = .everyday
     @State private var selectedApps: Set<SocialApp> = []
@@ -132,29 +131,6 @@ private extension CustomPlanView {
                        subtitle: "When is social allowed?")
 
             VStack(spacing: 10) {
-                timeOption(
-                    icon: "moon.fill",
-                    label: "After a set time",
-                    description: "Allow after a specific hour",
-                    selected: timeBoundary == .afterTime
-                ) { timeBoundary = .afterTime }
-
-                if timeBoundary == .afterTime {
-                    DatePicker("", selection: $afterTime, displayedComponents: .hourAndMinute)
-                        .datePickerStyle(.compact)
-                        .labelsHidden()
-                        .padding(14)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Color.offBackgroundPrimary)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color.offStroke, lineWidth: 1)
-                        )
-                }
-
                 timeOption(
                     icon: "clock.fill",
                     label: "Time windows",
@@ -557,14 +533,6 @@ private extension CustomPlanView {
 private extension CustomPlanView {
 
     func savePlan() {
-        let afterTimeValue: TimeValue?
-        if timeBoundary == .afterTime {
-            let comps = Calendar.current.dateComponents([.hour, .minute], from: afterTime)
-            afterTimeValue = TimeValue(hour: comps.hour ?? 21, minute: comps.minute ?? 0)
-        } else {
-            afterTimeValue = nil
-        }
-
         let windows = timeBoundary == .duringWindows ? timeWindows : []
 
         let phoneBehavior = PhoneBehavior(
@@ -579,7 +547,6 @@ private extension CustomPlanView {
             icon: selectedIcon,
             selectedApps: selectedApps,
             timeBoundary: timeBoundary,
-            afterTime: afterTimeValue,
             timeWindows: windows,
             days: days,
             phoneBehavior: phoneBehavior

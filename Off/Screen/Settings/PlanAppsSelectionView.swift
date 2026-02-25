@@ -179,7 +179,7 @@ private extension PlanAppsSelectionView {
 
 #Preview {
     NavigationStack {
-        PlanAppsSelectionView(dismissFlow: .constant(true), preset: .eveningWindDown)
+        PlanAppsSelectionView(dismissFlow: .constant(true), preset: .weekdayDetox)
     }
     .withPreviewManagers()
 }

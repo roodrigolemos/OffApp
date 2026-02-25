@@ -6,8 +6,6 @@
 import Foundation
 
 enum TimeBoundary: String, Codable, CaseIterable, Hashable {
-    case anytime
-    case afterTime
     case duringWindows
     case never
 }
@@ -64,11 +62,6 @@ extension DaysOfWeek {
         if contains(.saturday) { count += 1 }
         return count
     }
-}
-
-struct TimeValue: Hashable {
-    var hour: Int
-    var minute: Int
 }
 
 struct TimeWindowValue: Hashable {
