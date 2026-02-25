@@ -14,7 +14,7 @@ struct CustomPlanView: View {
     @State private var planName = ""
     @State private var selectedIcon = "gearshape.fill"
     
-    @State private var timeBoundary: TimeBoundary = .anytime
+    @State private var timeBoundary: TimeBoundary = .afterTime
     @State private var afterTime = Calendar.current.date(from: DateComponents(hour: 20, minute: 0)) ?? .now
     @State private var timeWindows: [TimeWindowValue] = [TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)]
     @State private var days: DaysOfWeek = .everyday
@@ -132,13 +132,6 @@ private extension CustomPlanView {
                        subtitle: "When is social allowed?")
 
             VStack(spacing: 10) {
-                timeOption(
-                    icon: "sun.max.fill",
-                    label: "Anytime",
-                    description: "No time restrictions",
-                    selected: timeBoundary == .anytime
-                ) { timeBoundary = .anytime }
-
                 timeOption(
                     icon: "moon.fill",
                     label: "After a set time",

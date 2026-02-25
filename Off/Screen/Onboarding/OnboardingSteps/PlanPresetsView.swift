@@ -42,7 +42,7 @@ private extension PlanPresetsView {
                 .lineLimit(2)
                 .minimumScaleFactor(0.9)
 
-            Text("You can customize or change your plan anytime later.")
+            Text("You can customize or change your plan later.")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Color.offTextSecondary)
                 .lineSpacing(3)
