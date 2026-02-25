@@ -24,7 +24,6 @@ final class Plan {
     var turnOffNotifications: Bool
     var logOutAccounts: Bool
     var deleteApps: Bool
-    var condition: String?
     var icon: String?
 
     init(from snapshot: PlanSnapshot) {
@@ -44,7 +43,6 @@ final class Plan {
         self.turnOffNotifications = snapshot.phoneBehavior.turnOffNotifications
         self.logOutAccounts = snapshot.phoneBehavior.logOutAccounts
         self.deleteApps = snapshot.phoneBehavior.deleteApps
-        self.condition = snapshot.condition
         self.icon = snapshot.icon
     }
 
@@ -80,8 +78,7 @@ final class Plan {
             afterTime: afterTime,
             timeWindows: windows,
             days: DaysOfWeek(rawValue: daysRaw),
-            phoneBehavior: behavior,
-            condition: condition
+            phoneBehavior: behavior
         )
     }
 }

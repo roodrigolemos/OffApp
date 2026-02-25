@@ -18,7 +18,6 @@ struct PlanSnapshot: Equatable {
     let timeWindows: [TimeWindowValue]
     let days: DaysOfWeek
     let phoneBehavior: PhoneBehavior
-    let condition: String?
 
     // Full initializer
     init(
@@ -32,8 +31,7 @@ struct PlanSnapshot: Equatable {
         afterTime: TimeValue?,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
-        phoneBehavior: PhoneBehavior,
-        condition: String?,
+        phoneBehavior: PhoneBehavior
     ) {
         self.firstPlanCreatedAt = firstPlanCreatedAt ?? createdAt
         self.createdAt = createdAt
@@ -46,7 +44,6 @@ struct PlanSnapshot: Equatable {
         self.timeWindows = timeWindows
         self.days = days
         self.phoneBehavior = phoneBehavior
-        self.condition = condition
     }
 
     // Convenience: create from preset (resolves all computed values from it)
@@ -62,7 +59,6 @@ struct PlanSnapshot: Equatable {
         self.timeWindows = preset.timeWindows
         self.days = preset.days
         self.phoneBehavior = preset.phoneBehavior
-        self.condition = nil
     }
 
     var displayName: String {

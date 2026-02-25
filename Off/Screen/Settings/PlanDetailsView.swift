@@ -114,9 +114,6 @@ private extension PlanDetailsView {
             VStack(alignment: .leading, spacing: 12) {
                 detailRow(icon: "clock.fill", label: "When", value: timeDescription(plan))
                 detailRow(icon: "calendar", label: "Days", value: daysDescription(plan.days))
-                if let condition = plan.condition, !condition.isEmpty {
-                    detailRow(icon: "checkmark.seal.fill", label: "Condition", value: condition)
-                }
             }
         }
     }

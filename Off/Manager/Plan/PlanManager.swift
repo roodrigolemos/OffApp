@@ -76,8 +76,7 @@ final class PlanManager {
         afterTime: TimeValue?,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
-        phoneBehavior: PhoneBehavior,
-        condition: String?
+        phoneBehavior: PhoneBehavior
     ) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -105,8 +104,7 @@ final class PlanManager {
                 afterTime: afterTime,
                 timeWindows: timeWindows,
                 days: days,
-                phoneBehavior: phoneBehavior,
-                condition: condition
+                phoneBehavior: phoneBehavior
             )
             try store.save(snapshot)
             loadPlan()

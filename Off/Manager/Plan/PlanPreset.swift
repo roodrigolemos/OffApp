@@ -49,7 +49,7 @@ enum PlanPreset: String, CaseIterable, Identifiable, Hashable {
         case .eveningWindDown: return "When: after 8 PM\nDays: every day\nPhone: log out"
         case .weekdayDetox: return "When: never\nDays: Mon–Fri\nPhone: delete apps"
         case .lunchBreakOnly: return "When: 12–1 PM\nDays: every day\nPhone: hidden + silent"
-        case .purposeFirst: return "Condition: after tasks done\nDays: every day\nPhone: silent"
+        case .purposeFirst: return "When: after a set time\nDays: every day\nPhone: silent"
         case .morningFocus: return "When: after 12 PM\nDays: Mon–Fri\nPhone: hidden"
         }
     }

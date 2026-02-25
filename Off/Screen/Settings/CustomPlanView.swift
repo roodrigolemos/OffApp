@@ -23,7 +23,6 @@ struct CustomPlanView: View {
     @State private var turnOffNotifications = false
     @State private var logOutAccounts = false
     @State private var deleteApps = false
-    @State private var condition = ""
 
     private let iconOptions = [
         "gearshape.fill", "moon.stars.fill", "sunrise.fill", "bolt.fill",
@@ -42,7 +41,6 @@ struct CustomPlanView: View {
                     nameCard
                     iconCard
                     timeCard
-                    conditionCard
                     suggestionCard
                     daysCard
                     appsCard
@@ -195,41 +193,6 @@ private extension CustomPlanView {
                 ) { timeBoundary = .never }
             }
             .animation(.easeInOut(duration: 0.25), value: timeBoundary)
-        }
-        .modifier(CardStyle())
-    }
-
-    var conditionCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            cardHeader(icon: "checkmark.seal.fill",
-                       title: "Condition",
-                       subtitle: "Optional rule before opening apps")
-
-            ZStack(alignment: .topLeading) {
-                if condition.isEmpty {
-                    Text("e.g. After finishing all tasks for the day")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color.offTextMuted)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 16)
-                }
-
-                TextEditor(text: $condition)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.offTextPrimary)
-                    .scrollContentBackground(.hidden)
-                    .padding(.horizontal, 13)
-                    .padding(.vertical, 8)
-                    .frame(minHeight: 80)
-            }
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.offBackgroundPrimary)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.offStroke, lineWidth: 1)
-            )
         }
         .modifier(CardStyle())
     }
@@ -618,8 +581,6 @@ private extension CustomPlanView {
             deleteApps: deleteApps
         )
 
-        let trimmedCondition = condition.trimmingCharacters(in: .whitespacesAndNewlines)
-
         planManager.changePlan(
             name: planName,
             icon: selectedIcon,
@@ -628,8 +589,7 @@ private extension CustomPlanView {
             afterTime: afterTimeValue,
             timeWindows: windows,
             days: days,
-            phoneBehavior: phoneBehavior,
-            condition: trimmedCondition.isEmpty ? nil : trimmedCondition
+            phoneBehavior: phoneBehavior
         )
 
         if planManager.error == nil {
