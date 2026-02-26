@@ -12,11 +12,11 @@ struct PlanSnapshot: Equatable {
     let preset: PlanPreset?
     let selectedApps: Set<SocialApp>
     let name: String
-    let icon: String?
     let timeBoundary: TimeBoundary
     let timeWindows: [TimeWindowValue]
     let days: DaysOfWeek
-    let phoneBehavior: PhoneBehavior
+    let phoneRestrictionMethod: PhoneRestrictionMethod
+    let lightSupports: Set<LightSupport>
 
     // Full initializer
     init(
@@ -25,22 +25,22 @@ struct PlanSnapshot: Equatable {
         preset: PlanPreset?,
         selectedApps: Set<SocialApp>,
         name: String,
-        icon: String? = nil,
         timeBoundary: TimeBoundary,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
-        phoneBehavior: PhoneBehavior
+        phoneRestrictionMethod: PhoneRestrictionMethod,
+        lightSupports: Set<LightSupport>
     ) {
         self.firstPlanCreatedAt = firstPlanCreatedAt ?? createdAt
         self.createdAt = createdAt
         self.preset = preset
         self.selectedApps = selectedApps
         self.name = name
-        self.icon = icon
         self.timeBoundary = timeBoundary
         self.timeWindows = timeWindows
         self.days = days
-        self.phoneBehavior = phoneBehavior
+        self.phoneRestrictionMethod = phoneRestrictionMethod
+        self.lightSupports = phoneRestrictionMethod.normalized(lightSupports: lightSupports)
     }
 
     // Convenience: create from preset (resolves all computed values from it)
@@ -50,11 +50,11 @@ struct PlanSnapshot: Equatable {
         self.preset = preset
         self.selectedApps = selectedApps
         self.name = preset.name
-        self.icon = nil
         self.timeBoundary = preset.timeBoundary
         self.timeWindows = preset.timeWindows
         self.days = preset.days
-        self.phoneBehavior = preset.phoneBehavior
+        self.phoneRestrictionMethod = preset.phoneRestrictionMethod
+        self.lightSupports = preset.lightSupports
     }
 
     var displayName: String {
@@ -63,8 +63,7 @@ struct PlanSnapshot: Equatable {
     }
 
     var displayIcon: String {
-        if let preset { return preset.icon }
-        return icon ?? "gearshape.fill"
+        PlanVisuals.defaultIcon
     }
 
     var activeDays: Int {

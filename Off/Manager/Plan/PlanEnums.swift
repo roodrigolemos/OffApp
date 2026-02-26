@@ -7,21 +7,50 @@ import Foundation
 
 enum TimeBoundary: String, Codable, CaseIterable, Hashable {
     case duringWindows
-    case never
+    case always
 }
 
-struct PhoneBehavior: Hashable {
-    var removeFromHomeScreen: Bool
-    var turnOffNotifications: Bool
-    var logOutAccounts: Bool
-    var deleteApps: Bool
+enum PlanVisuals {
+    static let defaultIcon = "target"
+}
 
-    static let none = PhoneBehavior(
-        removeFromHomeScreen: false,
-        turnOffNotifications: false,
-        logOutAccounts: false,
-        deleteApps: false
-    )
+enum PhoneRestrictionMethod: String, Codable, CaseIterable, Hashable {
+    case none
+    case screenTime
+    case deleteApps
+
+    var displayName: String {
+        switch self {
+        case .none: return "No restriction"
+        case .screenTime: return "iOS Screen Time shielding"
+        case .deleteApps: return "Delete apps from iPhone"
+        }
+    }
+
+    func normalized(lightSupports: Set<LightSupport>) -> Set<LightSupport> {
+        switch self {
+        case .none:
+            return lightSupports
+        case .screenTime:
+            return lightSupports.subtracting([.logOut])
+        case .deleteApps:
+            return []
+        }
+    }
+}
+
+enum LightSupport: String, Codable, CaseIterable, Hashable {
+    case notificationsOff
+    case removeFromHomeScreen
+    case logOut
+
+    var displayName: String {
+        switch self {
+        case .notificationsOff: return "Turn off notifications"
+        case .removeFromHomeScreen: return "Remove from Home Screen"
+        case .logOut: return "Log out"
+        }
+    }
 }
 
 struct DaysOfWeek: OptionSet, Codable, Hashable {

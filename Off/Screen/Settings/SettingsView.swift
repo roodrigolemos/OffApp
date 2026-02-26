@@ -156,7 +156,7 @@ private extension SettingsView {
                             .fill(Color.offAccent.opacity(0.12))
                             .frame(width: 36, height: 36)
 
-                        Image(systemName: planManager.activePlan?.displayIcon ?? "questionmark")
+                        Image(systemName: planManager.activePlan?.displayIcon ?? PlanVisuals.defaultIcon)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(Color.offAccent)
                     }

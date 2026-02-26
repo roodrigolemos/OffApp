@@ -426,7 +426,7 @@ private extension HomeView {
                     .fill(Color.white.opacity(0.4))
                     .frame(width: 44, height: 44)
 
-                Image(systemName: planManager.activePlan?.displayIcon ?? "questionmark")
+                Image(systemName: planManager.activePlan?.displayIcon ?? PlanVisuals.defaultIcon)
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(Color.offAccent)
             }
@@ -461,7 +461,7 @@ private extension HomeView {
 
                 VStack(alignment: .leading, spacing: 8) {
                     if let whenText = planCardWhenText(for: plan) {
-                        planCardDetailRow(label: "WHEN", value: whenText)
+                        planCardDetailRow(label: "NOT ALLOWED", value: whenText)
                     }
 
                     planCardDetailRow(label: "DAYS", value: planCardDaysText(for: plan))
@@ -828,8 +828,8 @@ private extension HomeView {
         switch plan.timeBoundary {
         case .duringWindows:
             return "During set windows"
-        case .never:
-            return "Never"
+        case .always:
+            return "Always"
         }
     }
 
@@ -877,11 +877,14 @@ private extension HomeView {
     }
 
     func planCardActionsText(for plan: PlanSnapshot) -> String? {
+        if plan.phoneRestrictionMethod == .deleteApps {
+            return "Delete"
+        }
+
         var actions: [String] = []
-        if plan.phoneBehavior.removeFromHomeScreen { actions.append("Hide") }
-        if plan.phoneBehavior.turnOffNotifications { actions.append("Mute") }
-        if plan.phoneBehavior.logOutAccounts { actions.append("Logout") }
-        if plan.phoneBehavior.deleteApps { actions.append("Delete") }
+        if plan.lightSupports.contains(.removeFromHomeScreen) { actions.append("Hide") }
+        if plan.lightSupports.contains(.notificationsOff) { actions.append("Mute") }
+        if plan.lightSupports.contains(.logOut) { actions.append("Logout") }
         return actions.isEmpty ? nil : actions.joined(separator: " · ")
     }
 

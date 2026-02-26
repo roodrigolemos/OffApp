@@ -12,24 +12,13 @@ struct CustomPlanView: View {
     @Binding var dismissFlow: Bool
 
     @State private var planName = ""
-    @State private var selectedIcon = "gearshape.fill"
     
     @State private var timeBoundary: TimeBoundary = .duringWindows
     @State private var timeWindows: [TimeWindowValue] = [TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)]
     @State private var days: DaysOfWeek = .everyday
     @State private var selectedApps: Set<SocialApp> = []
-    @State private var removeFromHomeScreen = false
-    @State private var turnOffNotifications = false
-    @State private var logOutAccounts = false
-    @State private var deleteApps = false
-
-    private let iconOptions = [
-        "gearshape.fill", "moon.stars.fill", "sunrise.fill", "bolt.fill",
-        "leaf.fill", "flame.fill", "shield.fill", "target",
-        "brain.head.profile.fill", "eye.slash.fill", "lock.fill", "bell.slash.fill",
-        "hourglass", "sparkles", "heart.fill", "star.fill",
-        "figure.walk", "book.fill"
-    ]
+    @State private var phoneRestrictionMethod: PhoneRestrictionMethod = .none
+    @State private var lightSupports: Set<LightSupport> = []
 
     var body: some View {
         ZStack {
@@ -38,9 +27,12 @@ struct CustomPlanView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 12) {
                     nameCard
-                    iconCard
+                    phoneRestrictionCard
+                    if shouldShowLightSupports {
+                        lightSupportsCard
+                    }
+                    
                     timeCard
-                    suggestionCard
                     daysCard
                     appsCard
                     saveButton
@@ -53,6 +45,9 @@ struct CustomPlanView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             selectedApps = planManager.activePlan?.selectedApps ?? []
+        }
+        .onChange(of: phoneRestrictionMethod) {
+            lightSupports = phoneRestrictionMethod.normalized(lightSupports: lightSupports)
         }
         .alert(
             "Error",
@@ -90,51 +85,17 @@ private extension CustomPlanView {
         .modifier(CardStyle())
     }
 
-    var iconCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            cardHeader(icon: "square.grid.2x2.fill", title: "Icon",
-                       subtitle: "Pick an icon for your plan")
-
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 6),
-                spacing: 10
-            ) {
-                ForEach(iconOptions, id: \.self) { icon in
-                    Button {
-                        selectedIcon = icon
-                    } label: {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(selectedIcon == icon ? Color.offAccent : Color.offBackgroundPrimary)
-
-                            Image(systemName: icon)
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundStyle(selectedIcon == icon ? .white : Color.offTextSecondary)
-                        }
-                        .frame(height: 44)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(selectedIcon == icon ? Color.offAccent : Color.offStroke, lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .modifier(CardStyle())
-    }
-
     var timeCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             cardHeader(icon: "clock.fill",
-                       title: "When to Allow",
-                       subtitle: "When is social allowed?")
+                       title: "Set Times",
+                       subtitle: "When is social media not allowed?")
 
             VStack(spacing: 10) {
                 timeOption(
                     icon: "clock.fill",
                     label: "Time windows",
-                    description: "Allow during specific periods",
+                    description: "Not allowed at these times",
                     selected: timeBoundary == .duringWindows
                 ) { timeBoundary = .duringWindows }
 
@@ -156,34 +117,117 @@ private extension CustomPlanView {
 
                 timeOption(
                     icon: "xmark.circle.fill",
-                    label: "Never",
-                    description: "Block completely",
-                    selected: timeBoundary == .never
-                ) { timeBoundary = .never }
+                    label: "Always",
+                    description: "Not allowed at any time",
+                    selected: timeBoundary == .always
+                ) { timeBoundary = .always }
             }
             .animation(.easeInOut(duration: 0.25), value: timeBoundary)
         }
         .modifier(CardStyle())
     }
 
-    var suggestionCard: some View {
+    var shouldShowLightSupports: Bool {
+        return phoneRestrictionMethod != .deleteApps
+    }
+
+    var availableLightSupports: [LightSupport] {
+        switch phoneRestrictionMethod {
+        case .none:
+            return [.notificationsOff, .removeFromHomeScreen, .logOut]
+        case .screenTime:
+            return [.notificationsOff, .removeFromHomeScreen]
+        case .deleteApps:
+            return []
+        }
+    }
+
+    var phoneRestrictionCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            cardHeader(icon: "iphone", title: "Phone Suggestions", subtitle: "What to do with your phone")
+            cardHeader(icon: "iphone", title: "Phone Restriction", subtitle: "Pick one core method")
 
             VStack(spacing: 10) {
-                suggestionOption(icon: "apps.iphone", label: "Remove from Home Screen", description: "Hide apps from your home screen", isOn: $removeFromHomeScreen, disabled: deleteApps)
-                suggestionOption(icon: "bell.slash.fill", label: "Turn off notifications", description: "Stop all push notifications", isOn: $turnOffNotifications, disabled: deleteApps)
-                suggestionOption(icon: "rectangle.portrait.and.arrow.right", label: "Log out of accounts", description: "Sign out of all accounts", isOn: $logOutAccounts, disabled: deleteApps)
-                suggestionOption(icon: "trash.fill", label: "Delete apps entirely", description: "Permanently remove apps", isOn: $deleteApps, disabled: false)
+                restrictionOption(
+                    icon: "sparkles",
+                    label: "No restriction",
+                    description: "Use lighter supports without hard phone blocks",
+                    selected: phoneRestrictionMethod == .none
+                ) {
+                    phoneRestrictionMethod = .none
+                }
+
+                restrictionOption(
+                    icon: "shield.fill",
+                    label: "iOS Screen Time Shielding",
+                    description: "Rely on scheduled shield restrictions",
+                    selected: phoneRestrictionMethod == .screenTime
+                ) {
+                    phoneRestrictionMethod = .screenTime
+                }
+
+                restrictionOption(
+                    icon: "trash.fill",
+                    label: "Delete apps from iPhone",
+                    description: "Remove social apps from your phone",
+                    selected: phoneRestrictionMethod == .deleteApps
+                ) {
+                    phoneRestrictionMethod = .deleteApps
+                }
             }
         }
         .modifier(CardStyle())
-        .onChange(of: deleteApps) {
-            if deleteApps {
-                removeFromHomeScreen = true
-                turnOffNotifications = true
-                logOutAccounts = true
+    }
+
+    var lightSupportsCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            cardHeader(icon: "checklist", title: "Light Supports", subtitle: "Optional actions")
+
+            VStack(spacing: 10) {
+                ForEach(availableLightSupports, id: \.self) { lightSupport in
+                    lightSupportOption(
+                        icon: icon(for: lightSupport),
+                        label: lightSupport.displayName,
+                        description: description(for: lightSupport),
+                        isOn: lightSupportBinding(for: lightSupport)
+                    )
+                }
             }
+        }
+        .modifier(CardStyle())
+    }
+
+    func lightSupportBinding(for lightSupport: LightSupport) -> Binding<Bool> {
+        Binding(
+            get: { lightSupports.contains(lightSupport) },
+            set: { isOn in
+                if isOn {
+                    lightSupports.insert(lightSupport)
+                } else {
+                    lightSupports.remove(lightSupport)
+                }
+            }
+        )
+    }
+
+    func icon(for lightSupport: LightSupport) -> String {
+        switch lightSupport {
+        case .notificationsOff:
+            return "bell.slash.fill"
+        case .removeFromHomeScreen:
+            return "apps.iphone"
+        case .logOut:
+            return "rectangle.portrait.and.arrow.right"
+        }
+    }
+
+    func description(for lightSupport: LightSupport) -> String {
+        switch lightSupport {
+        case .notificationsOff:
+            return "Stop social app push notifications"
+        case .removeFromHomeScreen:
+            return "Keep social apps out of your home screen"
+        case .logOut:
+            return "Use extra friction with account sign-out"
         }
     }
 
@@ -425,11 +469,49 @@ private extension CustomPlanView {
         .buttonStyle(.plain)
     }
 
-    func suggestionOption(icon: String, label: String, description: String, isOn: Binding<Bool>, disabled: Bool) -> some View {
+    func restrictionOption(icon: String, label: String, description: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button {
-            if !disabled {
-                isOn.wrappedValue.toggle()
+            action()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(selected ? Color.offAccent : Color.offTextSecondary)
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.offTextPrimary)
+
+                    Text(description)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.offTextSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(selected ? Color.offAccent : Color.offDotInactive)
             }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(selected ? Color.offAccent.opacity(0.08) : Color.offBackgroundPrimary)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(selected ? Color.offAccent : Color.offStroke, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    func lightSupportOption(icon: String, label: String, description: String, isOn: Binding<Bool>) -> some View {
+        Button {
+            isOn.wrappedValue.toggle()
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: icon)
@@ -465,7 +547,6 @@ private extension CustomPlanView {
             )
         }
         .buttonStyle(.plain)
-        .opacity(disabled && label != "Delete apps entirely" ? 0.5 : 1)
     }
 
     func dayPill(label: String, day: DaysOfWeek) -> some View {
@@ -535,21 +616,14 @@ private extension CustomPlanView {
     func savePlan() {
         let windows = timeBoundary == .duringWindows ? timeWindows : []
 
-        let phoneBehavior = PhoneBehavior(
-            removeFromHomeScreen: removeFromHomeScreen,
-            turnOffNotifications: turnOffNotifications,
-            logOutAccounts: logOutAccounts,
-            deleteApps: deleteApps
-        )
-
         planManager.changePlan(
             name: planName,
-            icon: selectedIcon,
             selectedApps: selectedApps,
             timeBoundary: timeBoundary,
             timeWindows: windows,
             days: days,
-            phoneBehavior: phoneBehavior
+            phoneRestrictionMethod: phoneRestrictionMethod,
+            lightSupports: lightSupports
         )
 
         if planManager.error == nil {

@@ -12,6 +12,7 @@ enum PlanError: Error, LocalizedError {
     case invalidPlanName
     case notEnoughDays
     case noAppsSelected
+    case phoneRestrictionRequired
 
     var errorDescription: String? {
         switch self {
@@ -21,6 +22,7 @@ enum PlanError: Error, LocalizedError {
         case .invalidPlanName: "Please enter a name for your plan."
         case .notEnoughDays: "Please select at least 4 days."
         case .noAppsSelected: "Please select at least one app."
+        case .phoneRestrictionRequired: "Please select a phone restriction."
         }
     }
 }

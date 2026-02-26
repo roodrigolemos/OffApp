@@ -104,7 +104,7 @@ private extension PlanPresetsView {
                     .fill(RadialGradient(colors: [Color.offAccent.opacity(0.15), Color.offAccent.opacity(0.05)], center: .center, startRadius: 0, endRadius: 20))
                     .frame(width: 40, height: 40)
 
-                Image(systemName: preset.icon)
+                Image(systemName: PlanVisuals.defaultIcon)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(LinearGradient(colors: [Color.offAccent, Color.offAccent.opacity(0.7)], startPoint: .top, endPoint: .bottom))
             }

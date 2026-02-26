@@ -95,7 +95,7 @@ private extension PlanSelectionView {
                     )
                     .frame(width: 40, height: 40)
 
-                Image(systemName: preset.icon)
+                Image(systemName: PlanVisuals.defaultIcon)
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(
                         LinearGradient(

@@ -70,12 +70,12 @@ final class PlanManager {
 
     func changePlan(
         name: String,
-        icon: String?,
         selectedApps: Set<SocialApp>,
         timeBoundary: TimeBoundary,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
-        phoneBehavior: PhoneBehavior
+        phoneRestrictionMethod: PhoneRestrictionMethod?,
+        lightSupports: Set<LightSupport>
     ) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -90,6 +90,10 @@ final class PlanManager {
             error = .noAppsSelected
             return
         }
+        guard let phoneRestrictionMethod else {
+            error = .phoneRestrictionRequired
+            return
+        }
 
         do {
             let snapshot = PlanSnapshot(
@@ -98,11 +102,11 @@ final class PlanManager {
                 preset: nil,
                 selectedApps: selectedApps,
                 name: trimmed,
-                icon: icon,
                 timeBoundary: timeBoundary,
                 timeWindows: timeWindows,
                 days: days,
-                phoneBehavior: phoneBehavior
+                phoneRestrictionMethod: phoneRestrictionMethod,
+                lightSupports: phoneRestrictionMethod.normalized(lightSupports: lightSupports)
             )
             try store.save(snapshot)
             loadPlan()

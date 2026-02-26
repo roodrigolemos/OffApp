@@ -24,7 +24,7 @@ struct PlanDetailsView: View {
                     VStack(spacing: 16) {
                         headerSection(plan)
                         scheduleSection(plan)
-                        phoneBehaviorSection(plan)
+                        phoneRestrictionSection(plan)
                         appsSection(plan)
                     }
                     .padding(.horizontal, 24)
@@ -112,30 +112,27 @@ private extension PlanDetailsView {
     func scheduleSection(_ plan: PlanSnapshot) -> some View {
         detailCard(title: "SCHEDULE") {
             VStack(alignment: .leading, spacing: 12) {
-                detailRow(icon: "clock.fill", label: "When", value: timeDescription(plan))
+                detailRow(icon: "clock.fill", label: "Not allowed", value: timeDescription(plan))
                 detailRow(icon: "calendar", label: "Days", value: daysDescription(plan.days))
             }
         }
     }
 
-    func phoneBehaviorSection(_ plan: PlanSnapshot) -> some View {
-        let items = phoneBehaviorItems(plan.phoneBehavior)
-        return Group {
-            if !items.isEmpty {
-                detailCard(title: "PHONE BEHAVIOR") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(items, id: \.self) { item in
-                            HStack(spacing: 10) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundStyle(Color.offAccent)
+    func phoneRestrictionSection(_ plan: PlanSnapshot) -> some View {
+        detailCard(title: "PHONE RESTRICTION") {
+            VStack(alignment: .leading, spacing: 12) {
+                detailRow(
+                    icon: "iphone",
+                    label: "Restriction",
+                    value: plan.phoneRestrictionMethod.displayName
+                )
 
-                                Text(item)
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundStyle(Color.offTextPrimary)
-                            }
-                        }
-                    }
+                if !plan.lightSupports.isEmpty {
+                    detailRow(
+                        icon: "checklist",
+                        label: "Light Supports",
+                        value: lightSupportsDescription(plan.lightSupports)
+                    )
                 }
             }
         }
@@ -245,8 +242,8 @@ private extension PlanDetailsView {
 
     func timeDescription(_ plan: PlanSnapshot) -> String {
         switch plan.timeBoundary {
-        case .never:
-            return "Never allowed"
+        case .always:
+            return "Always"
         case .duringWindows:
             if plan.timeWindows.isEmpty { return "During set windows" }
             return plan.timeWindows.map { window in
@@ -277,13 +274,10 @@ private extension PlanDetailsView {
         return names.joined(separator: ", ")
     }
 
-    func phoneBehaviorItems(_ behavior: PhoneBehavior) -> [String] {
-        var items: [String] = []
-        if behavior.removeFromHomeScreen { items.append("Remove from Home Screen") }
-        if behavior.turnOffNotifications { items.append("Turn off notifications") }
-        if behavior.logOutAccounts { items.append("Log out of accounts") }
-        if behavior.deleteApps { items.append("Delete apps") }
-        return items
+    func lightSupportsDescription(_ lightSupports: Set<LightSupport>) -> String {
+        let displayOrder: [LightSupport] = [.notificationsOff, .removeFromHomeScreen, .logOut]
+        let names = displayOrder.compactMap { lightSupports.contains($0) ? $0.displayName : nil }
+        return names.joined(separator: ", ")
     }
 }
 

@@ -18,11 +18,8 @@ final class Plan {
     var timeBoundaryRaw: String
     var timeWindowsData: [[String: Int]]
     var daysRaw: Int
-    var removeFromHomeScreen: Bool
-    var turnOffNotifications: Bool
-    var logOutAccounts: Bool
-    var deleteApps: Bool
-    var icon: String?
+    var phoneRestrictionMethodRaw: String
+    var lightSupportsRaw: [String]
 
     init(from snapshot: PlanSnapshot) {
         self.firstPlanCreatedAt = snapshot.firstPlanCreatedAt
@@ -35,11 +32,8 @@ final class Plan {
             ["sh": tw.startHour, "sm": tw.startMinute, "eh": tw.endHour, "em": tw.endMinute]
         }
         self.daysRaw = snapshot.days.rawValue
-        self.removeFromHomeScreen = snapshot.phoneBehavior.removeFromHomeScreen
-        self.turnOffNotifications = snapshot.phoneBehavior.turnOffNotifications
-        self.logOutAccounts = snapshot.phoneBehavior.logOutAccounts
-        self.deleteApps = snapshot.phoneBehavior.deleteApps
-        self.icon = snapshot.icon
+        self.phoneRestrictionMethodRaw = snapshot.phoneRestrictionMethod.rawValue
+        self.lightSupportsRaw = snapshot.lightSupports.map(\.rawValue)
     }
 
     func toSnapshot() -> PlanSnapshot? {
@@ -53,12 +47,9 @@ final class Plan {
             return TimeWindowValue(startHour: sh, startMinute: sm, endHour: eh, endMinute: em)
         }
 
-        let behavior = PhoneBehavior(
-            removeFromHomeScreen: removeFromHomeScreen,
-            turnOffNotifications: turnOffNotifications,
-            logOutAccounts: logOutAccounts,
-            deleteApps: deleteApps
-        )
+        let restrictionMethod = PhoneRestrictionMethod(rawValue: phoneRestrictionMethodRaw) ?? .none
+        let lightSupports = Set(lightSupportsRaw.compactMap { LightSupport(rawValue: $0) })
+        let normalizedLightSupports = restrictionMethod.normalized(lightSupports: lightSupports)
 
         return PlanSnapshot(
             firstPlanCreatedAt: firstPlanCreatedAt,
@@ -66,11 +57,11 @@ final class Plan {
             preset: PlanPreset(rawValue: presetRawValue),
             selectedApps: Set(selectedAppsRaw.compactMap { SocialApp(rawValue: $0) }),
             name: name,
-            icon: icon,
             timeBoundary: timeBoundary,
             timeWindows: windows,
             days: DaysOfWeek(rawValue: daysRaw),
-            phoneBehavior: behavior
+            phoneRestrictionMethod: restrictionMethod,
+            lightSupports: normalizedLightSupports
         )
     }
 }

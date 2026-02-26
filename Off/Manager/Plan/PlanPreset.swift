@@ -18,13 +18,6 @@ enum PlanPreset: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    var icon: String {
-        switch self {
-        case .weekdayDetox: return "briefcase.fill"
-        case .lunchBreakOnly: return "fork.knife"
-        }
-    }
-
     var subtitle: String {
         switch self {
         case .weekdayDetox: return "Stay focused on weekdays."
@@ -34,14 +27,14 @@ enum PlanPreset: String, CaseIterable, Identifiable, Hashable {
 
     var detail: String {
         switch self {
-        case .weekdayDetox: return "When: never\nDays: Mon–Fri\nPhone: delete apps"
-        case .lunchBreakOnly: return "When: 12–1 PM\nDays: every day\nPhone: hidden + silent"
+        case .weekdayDetox: return "When: never\nDays: Mon–Fri\nPhone restriction: delete apps"
+        case .lunchBreakOnly: return "When: 12–1 PM\nDays: every day\nPhone restriction: iOS Screen Time + light supports"
         }
     }
 
     var timeBoundary: TimeBoundary {
         switch self {
-        case .weekdayDetox: return .never
+        case .weekdayDetox: return .always
         case .lunchBreakOnly: return .duringWindows
         }
     }
@@ -60,12 +53,19 @@ enum PlanPreset: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    var phoneBehavior: PhoneBehavior {
+    var phoneRestrictionMethod: PhoneRestrictionMethod {
+        switch self {
+        case .weekdayDetox: return .deleteApps
+        case .lunchBreakOnly: return .screenTime
+        }
+    }
+
+    var lightSupports: Set<LightSupport> {
         switch self {
         case .weekdayDetox:
-            return PhoneBehavior(removeFromHomeScreen: false, turnOffNotifications: false, logOutAccounts: false, deleteApps: true)
+            return []
         case .lunchBreakOnly:
-            return PhoneBehavior(removeFromHomeScreen: true, turnOffNotifications: true, logOutAccounts: false, deleteApps: false)
+            return [.notificationsOff, .removeFromHomeScreen]
         }
     }
 }
