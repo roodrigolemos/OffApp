@@ -21,6 +21,7 @@ enum OnboardingStep {
     case planPresets
     case planApps
     case expectedResults
+    case screenTimePermission
     case reviewRequest
     case paywall
 }
@@ -62,7 +63,9 @@ struct OnboardingView: View {
             case .planApps:
                 PlanAppsView(onNext: { currentStep = .expectedResults })
             case .expectedResults:
-                ExpectedResultsView(onNext: { currentStep = .reviewRequest })
+                ExpectedResultsView(onNext: { currentStep = .screenTimePermission })
+            case .screenTimePermission:
+                ScreenTimePermissionView(onNext: { currentStep = .reviewRequest })
             case .reviewRequest:
                 ReviewRequestView(onNext: { currentStep = .paywall })
             case .paywall:

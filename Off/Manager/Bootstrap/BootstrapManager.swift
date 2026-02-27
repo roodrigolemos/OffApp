@@ -16,12 +16,14 @@ final class BootstrapManager {
         attributeManager: AttributeManager,
         insightManager: InsightManager,
         urgeManager: UrgeManager,
-        statsManager: StatsManager
+        statsManager: StatsManager,
+        screenTimeManager: ScreenTimeManager
     ) {
         planManager.loadPlan()
         attributeManager.loadScores()
         checkInManager.loadCheckIns()
         urgeManager.loadInterventions()
+        screenTimeManager.refreshAuthorizationStatus()
         attributeManager.runWeeklyEvolutionIfNeeded(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
         insightManager.checkWeeklyInsightAvailability(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
         statsManager.recalculate(
@@ -38,11 +40,13 @@ final class BootstrapManager {
         attributeManager: AttributeManager,
         insightManager: InsightManager,
         urgeManager: UrgeManager,
-        statsManager: StatsManager
+        statsManager: StatsManager,
+        screenTimeManager: ScreenTimeManager
     ) {
         planManager.loadPlan()
         checkInManager.loadCheckIns()
         urgeManager.loadInterventions()
+        screenTimeManager.refreshAuthorizationStatus()
         attributeManager.runWeeklyEvolutionIfNeeded(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
         insightManager.checkWeeklyInsightAvailability(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
         statsManager.recalculate(

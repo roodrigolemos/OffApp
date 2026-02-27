@@ -17,6 +17,7 @@ struct PreviewContainer {
     static let checkInManager = CheckInManager(store: MockCheckInStore())
     static let urgeManager = UrgeManager(store: MockUrgeStore())
     static let insightManager = InsightManager(store: MockInsightStore(), aiService: MockAIService())
+    static let screenTimeManager = ScreenTimeManager()
     
     static func bootstrap() {
         bootstrapManager.bootstrap(
@@ -25,7 +26,8 @@ struct PreviewContainer {
             attributeManager: attributeManager,
             insightManager: insightManager,
             urgeManager: urgeManager,
-            statsManager: statsManager
+            statsManager: statsManager,
+            screenTimeManager: screenTimeManager
         )
     }
 }
@@ -42,6 +44,7 @@ extension View {
             .environment(PreviewContainer.urgeManager)
             .environment(PreviewContainer.insightManager)
             .environment(PreviewContainer.statsManager)
+            .environment(PreviewContainer.screenTimeManager)
             .environment(PreviewContainer.bootstrapManager)
             .task { PreviewContainer.bootstrap() }
     }

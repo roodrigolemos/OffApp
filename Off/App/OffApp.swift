@@ -36,6 +36,7 @@ struct OffApp: App {
     @State private var urgeManager: UrgeManager
     @State private var insightManager: InsightManager
     @State private var statsManager: StatsManager
+    @State private var screenTimeManager: ScreenTimeManager
     @State private var bootstrapManager: BootstrapManager
 
     private let container: ModelContainer
@@ -61,6 +62,7 @@ struct OffApp: App {
         _appState = State(initialValue: AppState())
         _onboardingManager = State(initialValue: OnboardingManager())
         _statsManager = State(initialValue: StatsManager())
+        _screenTimeManager = State(initialValue: ScreenTimeManager())
         _bootstrapManager = State(initialValue: BootstrapManager())
 
         switch config {
@@ -102,6 +104,7 @@ struct OffApp: App {
                 .environment(urgeManager)
                 .environment(insightManager)
                 .environment(statsManager)
+                .environment(screenTimeManager)
                 .environment(bootstrapManager)
                 .task {
                     bootstrapManager.bootstrap(
@@ -110,7 +113,8 @@ struct OffApp: App {
                         attributeManager: attributeManager,
                         insightManager: insightManager,
                         urgeManager: urgeManager,
-                        statsManager: statsManager
+                        statsManager: statsManager,
+                        screenTimeManager: screenTimeManager
                     )
                 }
                 .onChange(of: scenePhase) { _, newPhase in
@@ -121,7 +125,8 @@ struct OffApp: App {
                         attributeManager: attributeManager,
                         insightManager: insightManager,
                         urgeManager: urgeManager,
-                        statsManager: statsManager
+                        statsManager: statsManager,
+                        screenTimeManager: screenTimeManager
                     )
                 }
         }
