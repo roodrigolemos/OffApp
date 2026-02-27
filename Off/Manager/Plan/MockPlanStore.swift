@@ -33,7 +33,7 @@ final class MockPlanStore: PlanStore {
                 createdAt: twentyDaysAgo,
                 name: "Lunch Window",
                 timeBoundary: .duringWindows,
-                timeWindows: [TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)],
+                timeWindows: [PlanTimeWindowRules.defaultWindow],
                 days: .everyday,
                 phoneRestrictionMethod: .screenTime,
                 lightSupports: [.notificationsOff, .removeFromHomeScreen]

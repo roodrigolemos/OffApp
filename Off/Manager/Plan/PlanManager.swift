@@ -54,6 +54,7 @@ final class PlanManager {
         lightSupports: Set<LightSupport>
     ) {
         guard validate(name: name, days: days) else { return }
+        let normalizedWindows = PlanTimeWindowRules.normalized(timeBoundary: timeBoundary, timeWindows: timeWindows)
 
         do {
             let now = Date.now
@@ -62,7 +63,7 @@ final class PlanManager {
                 createdAt: now,
                 name: name.trimmingCharacters(in: .whitespacesAndNewlines),
                 timeBoundary: timeBoundary,
-                timeWindows: timeWindows,
+                timeWindows: normalizedWindows,
                 days: days,
                 phoneRestrictionMethod: phoneRestrictionMethod,
                 lightSupports: phoneRestrictionMethod.normalized(lightSupports: lightSupports)
@@ -90,6 +91,7 @@ final class PlanManager {
             name: name,
             days: days
         ) else { return }
+        let normalizedWindows = PlanTimeWindowRules.normalized(timeBoundary: timeBoundary, timeWindows: timeWindows)
 
         do {
             let snapshot = PlanSnapshot(
@@ -97,7 +99,7 @@ final class PlanManager {
                 createdAt: .now,
                 name: name.trimmingCharacters(in: .whitespacesAndNewlines),
                 timeBoundary: timeBoundary,
-                timeWindows: timeWindows,
+                timeWindows: normalizedWindows,
                 days: days,
                 phoneRestrictionMethod: phoneRestrictionMethod,
                 lightSupports: phoneRestrictionMethod.normalized(lightSupports: lightSupports)

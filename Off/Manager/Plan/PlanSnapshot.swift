@@ -27,11 +27,12 @@ struct PlanSnapshot: Equatable {
         phoneRestrictionMethod: PhoneRestrictionMethod,
         lightSupports: Set<LightSupport>
     ) {
+        let normalizedWindows = PlanTimeWindowRules.normalized(timeBoundary: timeBoundary, timeWindows: timeWindows)
         self.firstPlanCreatedAt = firstPlanCreatedAt ?? createdAt
         self.createdAt = createdAt
         self.name = name
         self.timeBoundary = timeBoundary
-        self.timeWindows = timeWindows
+        self.timeWindows = normalizedWindows
         self.days = days
         self.phoneRestrictionMethod = phoneRestrictionMethod
         self.lightSupports = phoneRestrictionMethod.normalized(lightSupports: lightSupports)

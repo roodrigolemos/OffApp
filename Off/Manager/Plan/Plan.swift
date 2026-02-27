@@ -44,6 +44,7 @@ final class Plan {
                   let eh = dict["eh"], let em = dict["em"] else { return nil }
             return TimeWindowValue(startHour: sh, startMinute: sm, endHour: eh, endMinute: em)
         }
+        let normalizedWindows = PlanTimeWindowRules.normalized(timeBoundary: timeBoundary, timeWindows: windows)
 
         let restrictionMethod = PhoneRestrictionMethod(rawValue: phoneRestrictionMethodRaw) ?? .none
         let lightSupports = Set(lightSupportsRaw.compactMap { LightSupport(rawValue: $0) })
@@ -54,7 +55,7 @@ final class Plan {
             createdAt: createdAt,
             name: name,
             timeBoundary: timeBoundary,
-            timeWindows: windows,
+            timeWindows: normalizedWindows,
             days: DaysOfWeek(rawValue: daysRaw),
             phoneRestrictionMethod: restrictionMethod,
             lightSupports: normalizedLightSupports

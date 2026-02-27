@@ -81,7 +81,10 @@ struct OnboardingView: View {
 
     private func completeOnboarding() {
         attributeManager.setInitialScores(ratings: onboardingManager.baselineRatings)
-        let windows = onboardingManager.timeBoundary == .duringWindows ? onboardingManager.timeWindows : []
+        let windows = PlanTimeWindowRules.normalized(
+            timeBoundary: onboardingManager.timeBoundary,
+            timeWindows: onboardingManager.timeWindows
+        )
         planManager.createPlan(
             name: onboardingManager.planName,
             timeBoundary: onboardingManager.timeBoundary,

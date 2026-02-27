@@ -827,7 +827,7 @@ private extension HomeView {
     func planCardWhenText(for plan: PlanSnapshot) -> String? {
         switch plan.timeBoundary {
         case .duringWindows:
-            return "During set windows"
+            return "Blocked hours"
         case .always:
             return "Always"
         }

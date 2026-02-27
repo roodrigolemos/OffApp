@@ -280,10 +280,8 @@ private extension PlanDetailsView {
         case .always:
             return "Always"
         case .duringWindows:
-            if plan.timeWindows.isEmpty { return "During set windows" }
-            return plan.timeWindows.map { window in
-                "\(formatTime(hour: window.startHour, minute: window.startMinute))–\(formatTime(hour: window.endHour, minute: window.endMinute))"
-            }.joined(separator: ", ")
+            guard let window = plan.timeWindows.first else { return "Blocked hours" }
+            return "\(formatTime(hour: window.startHour, minute: window.startMinute))–\(formatTime(hour: window.endHour, minute: window.endMinute))"
         }
     }
 

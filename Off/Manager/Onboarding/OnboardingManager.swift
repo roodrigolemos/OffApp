@@ -14,9 +14,7 @@ final class OnboardingManager {
     var socialTime: String? = nil
     var planName: String = ""
     var timeBoundary: TimeBoundary = .duringWindows
-    var timeWindows: [TimeWindowValue] = [
-        TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)
-    ]
+    var timeWindows: [TimeWindowValue] = [PlanTimeWindowRules.defaultWindow]
     var days: DaysOfWeek = .everyday
     var phoneRestrictionMethod: PhoneRestrictionMethod = .none
     var lightSupports: Set<LightSupport> = []
@@ -38,9 +36,10 @@ final class OnboardingManager {
         phoneRestrictionMethod: PhoneRestrictionMethod,
         lightSupports: Set<LightSupport>
     ) {
+        let normalizedWindows = PlanTimeWindowRules.normalized(timeBoundary: timeBoundary, timeWindows: timeWindows)
         self.planName = name
         self.timeBoundary = timeBoundary
-        self.timeWindows = timeWindows
+        self.timeWindows = normalizedWindows
         self.days = days
         self.phoneRestrictionMethod = phoneRestrictionMethod
         self.lightSupports = phoneRestrictionMethod.normalized(lightSupports: lightSupports)

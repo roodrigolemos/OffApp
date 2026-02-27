@@ -11,7 +11,7 @@ struct PlanRulesView: View {
 
     @State private var planName: String = ""
     @State private var timeBoundary: TimeBoundary = .duringWindows
-    @State private var timeWindows: [TimeWindowValue] = [TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)]
+    @State private var timeWindows: [TimeWindowValue] = [PlanTimeWindowRules.defaultWindow]
     @State private var days: DaysOfWeek = .everyday
     @State private var phoneRestrictionMethod: PhoneRestrictionMethod = .none
     @State private var lightSupports: Set<LightSupport> = []
@@ -45,13 +45,13 @@ struct PlanRulesView: View {
             planName = manager.planName
             timeBoundary = manager.timeBoundary
             timeWindows = manager.timeWindows
-            ensureTimeWindowsIfNeeded()
+            normalizeTimeWindows()
             days = manager.days
             phoneRestrictionMethod = manager.phoneRestrictionMethod
             lightSupports = manager.lightSupports
         }
         .onChange(of: timeBoundary) {
-            ensureTimeWindowsIfNeeded()
+            normalizeTimeWindows()
         }
         .onChange(of: phoneRestrictionMethod) {
             lightSupports = phoneRestrictionMethod.normalized(lightSupports: lightSupports)
@@ -109,23 +109,19 @@ private extension PlanRulesView {
             VStack(spacing: 10) {
                 timeOption(
                     icon: "clock.fill",
-                    label: "Time windows",
-                    description: "Not allowed at these times",
+                    label: "Blocked hours",
+                    description: "Not allowed during this range",
                     selected: timeBoundary == .duringWindows
                 ) { timeBoundary = .duringWindows }
 
                 if timeBoundary == .duringWindows {
-                    VStack(spacing: 8) {
-                        ForEach(timeWindows.indices, id: \.self) { index in
-                            timeWindowRow(index: index, canDelete: timeWindows.count > 1)
-                        }
-
-                        if timeWindows.count < 5 {
-                            addWindowButton {
-                                timeWindows.append(TimeWindowValue(startHour: 9,
-                                                                   startMinute: 0,
-                                                                   endHour: 10, endMinute: 0))
-                            }
+                    VStack(alignment: .leading, spacing: 8) {
+                        timeWindowRow()
+                        if let scheduledWindowErrorText {
+                            Text(scheduledWindowErrorText)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(Color.offWarn)
+                                .padding(.horizontal, 4)
                         }
                     }
                 }
@@ -229,7 +225,7 @@ private extension PlanRulesView {
 
     var ctaSection: some View {
         Button {
-            let windows = timeBoundary == .duringWindows ? timeWindows : []
+            let windows = PlanTimeWindowRules.normalized(timeBoundary: timeBoundary, timeWindows: timeWindows)
             manager.setPlanRules(
                 name: planName,
                 timeBoundary: timeBoundary,
@@ -263,7 +259,15 @@ private extension PlanRulesView {
     }
 
     var canContinue: Bool {
-        !planName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && days.dayCount >= 4
+        !planName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        && days.dayCount >= 4
+        && PlanTimeWindowRules.hasValidScheduledWindow(timeBoundary: timeBoundary, timeWindows: timeWindows)
+    }
+
+    var scheduledWindowErrorText: String? {
+        guard timeBoundary == .duringWindows else { return nil }
+        guard !PlanTimeWindowRules.hasValidScheduledWindow(timeBoundary: timeBoundary, timeWindows: timeWindows) else { return nil }
+        return "End time must be after start time (same day)."
     }
 }
 
@@ -309,11 +313,11 @@ private extension PlanRulesView {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    func timeWindowRow(index: Int, canDelete: Bool) -> some View {
+    func timeWindowRow() -> some View {
         HStack(spacing: 8) {
             DatePicker(
                 "",
-                selection: startTimeBinding(for: index),
+                selection: startTimeBinding(),
                 displayedComponents: .hourAndMinute
             )
             .labelsHidden()
@@ -324,25 +328,10 @@ private extension PlanRulesView {
 
             DatePicker(
                 "",
-                selection: endTimeBinding(for: index),
+                selection: endTimeBinding(),
                 displayedComponents: .hourAndMinute
             )
             .labelsHidden()
-
-            Spacer()
-
-            if canDelete {
-                Button {
-                    guard timeWindows.indices.contains(index) else { return }
-                    timeWindows.remove(at: index)
-                    ensureTimeWindowsIfNeeded()
-                } label: {
-                    Image(systemName: "minus.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color.offWarn)
-                }
-                .buttonStyle(.plain)
-            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -354,31 +343,6 @@ private extension PlanRulesView {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color.offStroke, lineWidth: 1)
         )
-    }
-
-    func addWindowButton(action: @escaping () -> Void) -> some View {
-        Button {
-            action()
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 16, weight: .medium))
-                Text("Add window")
-                    .font(.system(size: 14, weight: .semibold))
-            }
-            .foregroundStyle(Color.offAccent)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.offBackgroundPrimary)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.offAccent.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
-            )
-        }
-        .buttonStyle(.plain)
     }
 
     func timeOption(icon: String, label: String, description: String, selected: Bool, action: @escaping () -> Void) -> some View {
@@ -567,46 +531,44 @@ private extension PlanRulesView {
         Calendar.current.date(from: DateComponents(hour: hour, minute: minute)) ?? .now
     }
 
-    func startTimeBinding(for index: Int) -> Binding<Date> {
+    func currentScheduledWindow() -> TimeWindowValue {
+        PlanTimeWindowRules.normalized(timeBoundary: .duringWindows, timeWindows: timeWindows).first ?? PlanTimeWindowRules.defaultWindow
+    }
+
+    func startTimeBinding() -> Binding<Date> {
         Binding(
             get: {
-                guard timeWindows.indices.contains(index) else {
-                    return dateFrom(hour: 12, minute: 0)
-                }
-                let window = timeWindows[index]
+                let window = currentScheduledWindow()
                 return dateFrom(hour: window.startHour, minute: window.startMinute)
             },
             set: { newDate in
-                guard timeWindows.indices.contains(index) else { return }
                 let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-                timeWindows[index].startHour = comps.hour ?? 0
-                timeWindows[index].startMinute = comps.minute ?? 0
+                var window = currentScheduledWindow()
+                window.startHour = comps.hour ?? 0
+                window.startMinute = comps.minute ?? 0
+                timeWindows = PlanTimeWindowRules.normalized(timeBoundary: .duringWindows, timeWindows: [window])
             }
         )
     }
 
-    func endTimeBinding(for index: Int) -> Binding<Date> {
+    func endTimeBinding() -> Binding<Date> {
         Binding(
             get: {
-                guard timeWindows.indices.contains(index) else {
-                    return dateFrom(hour: 13, minute: 0)
-                }
-                let window = timeWindows[index]
+                let window = currentScheduledWindow()
                 return dateFrom(hour: window.endHour, minute: window.endMinute)
             },
             set: { newDate in
-                guard timeWindows.indices.contains(index) else { return }
                 let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-                timeWindows[index].endHour = comps.hour ?? 0
-                timeWindows[index].endMinute = comps.minute ?? 0
+                var window = currentScheduledWindow()
+                window.endHour = comps.hour ?? 0
+                window.endMinute = comps.minute ?? 0
+                timeWindows = PlanTimeWindowRules.normalized(timeBoundary: .duringWindows, timeWindows: [window])
             }
         )
     }
 
-    func ensureTimeWindowsIfNeeded() {
-        guard timeBoundary == .duringWindows else { return }
-        guard timeWindows.isEmpty else { return }
-        timeWindows = [TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)]
+    func normalizeTimeWindows() {
+        timeWindows = PlanTimeWindowRules.normalized(timeBoundary: timeBoundary, timeWindows: timeWindows)
     }
 }
 
