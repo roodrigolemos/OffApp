@@ -9,8 +9,6 @@ struct PlanSnapshot: Equatable {
 
     let firstPlanCreatedAt: Date
     let createdAt: Date
-    let preset: PlanPreset?
-    let selectedApps: Set<SocialApp>
     let name: String
     let timeBoundary: TimeBoundary
     let timeWindows: [TimeWindowValue]
@@ -22,8 +20,6 @@ struct PlanSnapshot: Equatable {
     init(
         firstPlanCreatedAt: Date? = nil,
         createdAt: Date,
-        preset: PlanPreset?,
-        selectedApps: Set<SocialApp>,
         name: String,
         timeBoundary: TimeBoundary,
         timeWindows: [TimeWindowValue],
@@ -33,8 +29,6 @@ struct PlanSnapshot: Equatable {
     ) {
         self.firstPlanCreatedAt = firstPlanCreatedAt ?? createdAt
         self.createdAt = createdAt
-        self.preset = preset
-        self.selectedApps = selectedApps
         self.name = name
         self.timeBoundary = timeBoundary
         self.timeWindows = timeWindows
@@ -43,22 +37,7 @@ struct PlanSnapshot: Equatable {
         self.lightSupports = phoneRestrictionMethod.normalized(lightSupports: lightSupports)
     }
 
-    // Convenience: create from preset (resolves all computed values from it)
-    init(preset: PlanPreset, selectedApps: Set<SocialApp>, createdAt: Date, firstPlanCreatedAt: Date? = nil) {
-        self.firstPlanCreatedAt = firstPlanCreatedAt ?? createdAt
-        self.createdAt = createdAt
-        self.preset = preset
-        self.selectedApps = selectedApps
-        self.name = preset.name
-        self.timeBoundary = preset.timeBoundary
-        self.timeWindows = preset.timeWindows
-        self.days = preset.days
-        self.phoneRestrictionMethod = preset.phoneRestrictionMethod
-        self.lightSupports = preset.lightSupports
-    }
-
     var displayName: String {
-        if let preset { return preset.name }
         return name
     }
 

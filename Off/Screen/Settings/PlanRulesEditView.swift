@@ -1,24 +1,23 @@
 //
-//  CustomPlanView.swift
+//  PlanRulesEditView.swift
 //  Off
 //
 
 import SwiftUI
 
-struct CustomPlanView: View {
+struct PlanRulesEditView: View {
 
     @Environment(PlanManager.self) var planManager
 
     @Binding var dismissFlow: Bool
 
     @State private var planName = ""
-    
     @State private var timeBoundary: TimeBoundary = .duringWindows
     @State private var timeWindows: [TimeWindowValue] = [TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)]
     @State private var days: DaysOfWeek = .everyday
-    @State private var selectedApps: Set<SocialApp> = []
     @State private var phoneRestrictionMethod: PhoneRestrictionMethod = .none
     @State private var lightSupports: Set<LightSupport> = []
+    @State private var hasLoadedInitialState = false
 
     var body: some View {
         ZStack {
@@ -31,20 +30,29 @@ struct CustomPlanView: View {
                     if shouldShowLightSupports {
                         lightSupportsCard
                     }
-                    
                     timeCard
                     daysCard
-                    appsCard
                     saveButton
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
             }
         }
-        .navigationTitle("Custom Plan")
+        .navigationTitle("Edit Rules")
         .navigationBarTitleDisplayMode(.inline)
-        .task {
-            selectedApps = planManager.activePlan?.selectedApps ?? []
+        .onAppear {
+            guard !hasLoadedInitialState else { return }
+            hasLoadedInitialState = true
+            guard let activePlan = planManager.activePlan else { return }
+            planName = activePlan.name
+            timeBoundary = activePlan.timeBoundary
+            timeWindows = activePlan.timeWindows.isEmpty ? [TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)] : activePlan.timeWindows
+            days = activePlan.days
+            phoneRestrictionMethod = activePlan.phoneRestrictionMethod
+            lightSupports = activePlan.lightSupports
+        }
+        .onChange(of: timeBoundary) {
+            ensureTimeWindowsIfNeeded()
         }
         .onChange(of: phoneRestrictionMethod) {
             lightSupports = phoneRestrictionMethod.normalized(lightSupports: lightSupports)
@@ -63,7 +71,7 @@ struct CustomPlanView: View {
 
 // MARK: - Sections
 
-private extension CustomPlanView {
+private extension PlanRulesEditView {
 
     var nameCard: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -82,7 +90,7 @@ private extension CustomPlanView {
                         .stroke(Color.offStroke, lineWidth: 1)
                 )
         }
-        .modifier(CardStyle())
+        .modifier(PlanRulesCardStyle())
     }
 
     var timeCard: some View {
@@ -122,13 +130,12 @@ private extension CustomPlanView {
                     selected: timeBoundary == .always
                 ) { timeBoundary = .always }
             }
-            .animation(.easeInOut(duration: 0.25), value: timeBoundary)
         }
-        .modifier(CardStyle())
+        .modifier(PlanRulesCardStyle())
     }
 
     var shouldShowLightSupports: Bool {
-        return phoneRestrictionMethod != .deleteApps
+        phoneRestrictionMethod != .deleteApps
     }
 
     var availableLightSupports: [LightSupport] {
@@ -175,7 +182,7 @@ private extension CustomPlanView {
                 }
             }
         }
-        .modifier(CardStyle())
+        .modifier(PlanRulesCardStyle())
     }
 
     var lightSupportsCard: some View {
@@ -193,42 +200,7 @@ private extension CustomPlanView {
                 }
             }
         }
-        .modifier(CardStyle())
-    }
-
-    func lightSupportBinding(for lightSupport: LightSupport) -> Binding<Bool> {
-        Binding(
-            get: { lightSupports.contains(lightSupport) },
-            set: { isOn in
-                if isOn {
-                    lightSupports.insert(lightSupport)
-                } else {
-                    lightSupports.remove(lightSupport)
-                }
-            }
-        )
-    }
-
-    func icon(for lightSupport: LightSupport) -> String {
-        switch lightSupport {
-        case .notificationsOff:
-            return "bell.slash.fill"
-        case .removeFromHomeScreen:
-            return "apps.iphone"
-        case .logOut:
-            return "rectangle.portrait.and.arrow.right"
-        }
-    }
-
-    func description(for lightSupport: LightSupport) -> String {
-        switch lightSupport {
-        case .notificationsOff:
-            return "Stop social app push notifications"
-        case .removeFromHomeScreen:
-            return "Keep social apps out of your home screen"
-        case .logOut:
-            return "Use extra friction with account sign-out"
-        }
+        .modifier(PlanRulesCardStyle())
     }
 
     var daysCard: some View {
@@ -245,44 +217,14 @@ private extension CustomPlanView {
                 dayPill(label: "S", day: .sunday)
             }
         }
-        .modifier(CardStyle())
-    }
-
-    var appsCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            cardHeader(icon: "app.badge.fill",
-                       title: "Apps",
-                       subtitle: "Which apps does this plan cover?")
-
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 12),
-                    GridItem(.flexible(), spacing: 12)
-                ],
-                spacing: 12
-            ) {
-                ForEach(SocialApp.allCases, id: \.self) { app in
-                    Button {
-                        if selectedApps.contains(app) {
-                            selectedApps.remove(app)
-                        } else {
-                            selectedApps.insert(app)
-                        }
-                    } label: {
-                        appChip(app, selected: selectedApps.contains(app))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .modifier(CardStyle())
+        .modifier(PlanRulesCardStyle())
     }
 
     var saveButton: some View {
         Button {
-            savePlan()
+            saveRules()
         } label: {
-            Text("Save Plan")
+            Text("Save Rules")
                 .font(.system(size: 16, weight: .semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -305,7 +247,7 @@ private extension CustomPlanView {
 
 // MARK: - View Helpers
 
-private extension CustomPlanView {
+private extension PlanRulesEditView {
 
     func cardHeader(icon: String, title: String, subtitle: String) -> some View {
         HStack(spacing: 12) {
@@ -349,14 +291,7 @@ private extension CustomPlanView {
         HStack(spacing: 8) {
             DatePicker(
                 "",
-                selection: Binding(
-                    get: { dateFrom(hour: timeWindows[index].startHour, minute: timeWindows[index].startMinute) },
-                    set: { newDate in
-                        let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-                        timeWindows[index].startHour = comps.hour ?? 0
-                        timeWindows[index].startMinute = comps.minute ?? 0
-                    }
-                ),
+                selection: startTimeBinding(for: index),
                 displayedComponents: .hourAndMinute
             )
             .labelsHidden()
@@ -367,14 +302,7 @@ private extension CustomPlanView {
 
             DatePicker(
                 "",
-                selection: Binding(
-                    get: { dateFrom(hour: timeWindows[index].endHour, minute: timeWindows[index].endMinute) },
-                    set: { newDate in
-                        let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
-                        timeWindows[index].endHour = comps.hour ?? 0
-                        timeWindows[index].endMinute = comps.minute ?? 0
-                    }
-                ),
+                selection: endTimeBinding(for: index),
                 displayedComponents: .hourAndMinute
             )
             .labelsHidden()
@@ -383,7 +311,9 @@ private extension CustomPlanView {
 
             if canDelete {
                 Button {
+                    guard timeWindows.indices.contains(index) else { return }
                     timeWindows.remove(at: index)
+                    ensureTimeWindowsIfNeeded()
                 } label: {
                     Image(systemName: "minus.circle.fill")
                         .font(.system(size: 18))
@@ -576,49 +506,46 @@ private extension CustomPlanView {
         .buttonStyle(.plain)
     }
 
-    func appChip(_ app: SocialApp, selected: Bool) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: app.icon)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(selected ? .white : Color.offAccent)
-
-            Text(app.displayName)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(selected ? .white : Color.offTextPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.9)
-
-            Spacer(minLength: 0)
-
-            Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(selected ? .white : Color.offDotInactive)
-        }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(selected ? Color.offAccent : Color.offBackgroundSecondary)
+    func lightSupportBinding(for lightSupport: LightSupport) -> Binding<Bool> {
+        Binding(
+            get: { lightSupports.contains(lightSupport) },
+            set: { isOn in
+                if isOn {
+                    lightSupports.insert(lightSupport)
+                } else {
+                    lightSupports.remove(lightSupport)
+                }
+            }
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(selected ? Color.offAccent : Color.offStroke, lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
-}
 
-// MARK: - Helpers
+    func icon(for lightSupport: LightSupport) -> String {
+        switch lightSupport {
+        case .notificationsOff:
+            return "bell.slash.fill"
+        case .removeFromHomeScreen:
+            return "apps.iphone"
+        case .logOut:
+            return "rectangle.portrait.and.arrow.right"
+        }
+    }
 
-private extension CustomPlanView {
+    func description(for lightSupport: LightSupport) -> String {
+        switch lightSupport {
+        case .notificationsOff:
+            return "Stop social app push notifications"
+        case .removeFromHomeScreen:
+            return "Keep social apps out of your home screen"
+        case .logOut:
+            return "Use extra friction with account sign-out"
+        }
+    }
 
-    func savePlan() {
+    func saveRules() {
         let windows = timeBoundary == .duringWindows ? timeWindows : []
 
-        planManager.changePlan(
+        planManager.updateRules(
             name: planName,
-            selectedApps: selectedApps,
             timeBoundary: timeBoundary,
             timeWindows: windows,
             days: days,
@@ -634,11 +561,53 @@ private extension CustomPlanView {
     func dateFrom(hour: Int, minute: Int) -> Date {
         Calendar.current.date(from: DateComponents(hour: hour, minute: minute)) ?? .now
     }
+
+    func startTimeBinding(for index: Int) -> Binding<Date> {
+        Binding(
+            get: {
+                guard timeWindows.indices.contains(index) else {
+                    return dateFrom(hour: 12, minute: 0)
+                }
+                let window = timeWindows[index]
+                return dateFrom(hour: window.startHour, minute: window.startMinute)
+            },
+            set: { newDate in
+                guard timeWindows.indices.contains(index) else { return }
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                timeWindows[index].startHour = comps.hour ?? 0
+                timeWindows[index].startMinute = comps.minute ?? 0
+            }
+        )
+    }
+
+    func endTimeBinding(for index: Int) -> Binding<Date> {
+        Binding(
+            get: {
+                guard timeWindows.indices.contains(index) else {
+                    return dateFrom(hour: 13, minute: 0)
+                }
+                let window = timeWindows[index]
+                return dateFrom(hour: window.endHour, minute: window.endMinute)
+            },
+            set: { newDate in
+                guard timeWindows.indices.contains(index) else { return }
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                timeWindows[index].endHour = comps.hour ?? 0
+                timeWindows[index].endMinute = comps.minute ?? 0
+            }
+        )
+    }
+
+    func ensureTimeWindowsIfNeeded() {
+        guard timeBoundary == .duringWindows else { return }
+        guard timeWindows.isEmpty else { return }
+        timeWindows = [TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)]
+    }
 }
 
-// MARK: - CardStyle
+// MARK: - PlanRulesCardStyle
 
-private struct CardStyle: ViewModifier {
+private struct PlanRulesCardStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -668,7 +637,7 @@ private struct CardStyle: ViewModifier {
 
 #Preview {
     NavigationStack {
-        CustomPlanView(dismissFlow: .constant(false))
+        PlanRulesEditView(dismissFlow: .constant(false))
     }
     .withPreviewManagers()
 }

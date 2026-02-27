@@ -19,18 +19,29 @@ final class MockPlanStore: PlanStore {
 
         return [
             PlanSnapshot(
-                preset: .weekdayDetox,
-                selectedApps: [.instagram, .tiktok, .youtube],
-                createdAt: fortyFiveDaysAgo
+                firstPlanCreatedAt: fortyFiveDaysAgo,
+                createdAt: fortyFiveDaysAgo,
+                name: "Focus Workdays",
+                timeBoundary: .always,
+                timeWindows: [],
+                days: .weekdays,
+                phoneRestrictionMethod: .deleteApps,
+                lightSupports: []
             ),
             PlanSnapshot(
-                preset: .lunchBreakOnly,
-                selectedApps: [.instagram, .tiktok, .youtube],
+                firstPlanCreatedAt: fortyFiveDaysAgo,
                 createdAt: twentyDaysAgo,
-                firstPlanCreatedAt: fortyFiveDaysAgo
+                name: "Lunch Window",
+                timeBoundary: .duringWindows,
+                timeWindows: [TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)],
+                days: .everyday,
+                phoneRestrictionMethod: .screenTime,
+                lightSupports: [.notificationsOff, .removeFromHomeScreen]
             )
         ]
     }
 
     func save(_ snapshot: PlanSnapshot) throws { }
+
+    func deleteAllPlans() throws { }
 }

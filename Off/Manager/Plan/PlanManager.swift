@@ -10,6 +10,7 @@ import Observation
 @Observable
 final class PlanManager {
 
+    private static let didResetPlansForRulesOnlyKey = "didResetPlansForRulesOnly"
     private let store: PlanStore
 
     var activePlan: PlanSnapshot?
@@ -35,6 +36,7 @@ final class PlanManager {
 
     func loadPlan() {
         do {
+            try runRulesOnlyMigrationIfNeeded()
             planHistory = try store.fetchAllPlans()
             activePlan = planHistory.last
             error = nil
@@ -43,65 +45,22 @@ final class PlanManager {
         }
     }
 
-    func createPlan(preset: PlanPreset, selectedApps: Set<SocialApp>) {
-        do {
-            let snapshot = PlanSnapshot(preset: preset, selectedApps: selectedApps, createdAt: .now)
-            try store.save(snapshot)
-            loadPlan()
-        } catch {
-            self.error = .saveFailed
-        }
-    }
-
-    func changePlan(preset: PlanPreset, selectedApps: Set<SocialApp>) {
-        do {
-            let snapshot = PlanSnapshot(
-                preset: preset,
-                selectedApps: selectedApps,
-                createdAt: .now,
-                firstPlanCreatedAt: activePlan?.firstPlanCreatedAt
-            )
-            try store.save(snapshot)
-            loadPlan()
-        } catch {
-            self.error = .saveFailed
-        }
-    }
-
-    func changePlan(
+    func createPlan(
         name: String,
-        selectedApps: Set<SocialApp>,
         timeBoundary: TimeBoundary,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
-        phoneRestrictionMethod: PhoneRestrictionMethod?,
+        phoneRestrictionMethod: PhoneRestrictionMethod,
         lightSupports: Set<LightSupport>
     ) {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            error = .invalidPlanName
-            return
-        }
-        guard days.dayCount >= 4 else {
-            error = .notEnoughDays
-            return
-        }
-        guard !selectedApps.isEmpty else {
-            error = .noAppsSelected
-            return
-        }
-        guard let phoneRestrictionMethod else {
-            error = .phoneRestrictionRequired
-            return
-        }
+        guard validate(name: name, days: days) else { return }
 
         do {
+            let now = Date.now
             let snapshot = PlanSnapshot(
-                firstPlanCreatedAt: activePlan?.firstPlanCreatedAt,
-                createdAt: .now,
-                preset: nil,
-                selectedApps: selectedApps,
-                name: trimmed,
+                firstPlanCreatedAt: now,
+                createdAt: now,
+                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
                 timeBoundary: timeBoundary,
                 timeWindows: timeWindows,
                 days: days,
@@ -115,4 +74,58 @@ final class PlanManager {
         }
     }
 
+    func updateRules(
+        name: String,
+        timeBoundary: TimeBoundary,
+        timeWindows: [TimeWindowValue],
+        days: DaysOfWeek,
+        phoneRestrictionMethod: PhoneRestrictionMethod,
+        lightSupports: Set<LightSupport>
+    ) {
+        guard let activePlan else {
+            error = .noActivePlan
+            return
+        }
+        guard validate(
+            name: name,
+            days: days
+        ) else { return }
+
+        do {
+            let snapshot = PlanSnapshot(
+                firstPlanCreatedAt: activePlan.firstPlanCreatedAt,
+                createdAt: .now,
+                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                timeBoundary: timeBoundary,
+                timeWindows: timeWindows,
+                days: days,
+                phoneRestrictionMethod: phoneRestrictionMethod,
+                lightSupports: phoneRestrictionMethod.normalized(lightSupports: lightSupports)
+            )
+            try store.save(snapshot)
+            loadPlan()
+        } catch {
+            self.error = .saveFailed
+        }
+    }
+
+    private func validate(name: String,days: DaysOfWeek) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            error = .invalidPlanName
+            return false
+        }
+        guard days.dayCount >= 4 else {
+            error = .notEnoughDays
+            return false
+        }
+        return true
+    }
+
+    private func runRulesOnlyMigrationIfNeeded() throws {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: Self.didResetPlansForRulesOnlyKey) else { return }
+        try store.deleteAllPlans()
+        defaults.set(true, forKey: Self.didResetPlansForRulesOnlyKey)
+    }
 }

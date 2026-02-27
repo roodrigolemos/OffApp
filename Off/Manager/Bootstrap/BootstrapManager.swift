@@ -24,6 +24,7 @@ final class BootstrapManager {
         checkInManager.loadCheckIns()
         urgeManager.loadInterventions()
         screenTimeManager.refreshAuthorizationStatus()
+        screenTimeManager.loadSelection()
         attributeManager.runWeeklyEvolutionIfNeeded(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
         insightManager.checkWeeklyInsightAvailability(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
         statsManager.recalculate(
@@ -47,6 +48,7 @@ final class BootstrapManager {
         checkInManager.loadCheckIns()
         urgeManager.loadInterventions()
         screenTimeManager.refreshAuthorizationStatus()
+        screenTimeManager.loadSelection()
         attributeManager.runWeeklyEvolutionIfNeeded(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
         insightManager.checkWeeklyInsightAvailability(plan: planManager.activePlan, checkIns: checkInManager.checkIns)
         statsManager.recalculate(

@@ -12,8 +12,14 @@ final class OnboardingManager {
     
     var baselineRatings: [Attribute: Int] = [:]
     var socialTime: String? = nil
-    var selectedPreset: PlanPreset? = nil
-    var selectedApps: Set<SocialApp> = []
+    var planName: String = ""
+    var timeBoundary: TimeBoundary = .duringWindows
+    var timeWindows: [TimeWindowValue] = [
+        TimeWindowValue(startHour: 12, startMinute: 0, endHour: 13, endMinute: 0)
+    ]
+    var days: DaysOfWeek = .everyday
+    var phoneRestrictionMethod: PhoneRestrictionMethod = .none
+    var lightSupports: Set<LightSupport> = []
     var selectedMirrorCards: Set<Int> = []
 
     func setBaselineRatings(_ ratings: [Attribute: Int]) {
@@ -24,12 +30,20 @@ final class OnboardingManager {
         socialTime = time
     }
 
-    func setSelectedPreset(_ preset: PlanPreset) {
-        selectedPreset = preset
-    }
-
-    func setSelectedApps(_ apps: Set<SocialApp>) {
-        selectedApps = apps
+    func setPlanRules(
+        name: String,
+        timeBoundary: TimeBoundary,
+        timeWindows: [TimeWindowValue],
+        days: DaysOfWeek,
+        phoneRestrictionMethod: PhoneRestrictionMethod,
+        lightSupports: Set<LightSupport>
+    ) {
+        self.planName = name
+        self.timeBoundary = timeBoundary
+        self.timeWindows = timeWindows
+        self.days = days
+        self.phoneRestrictionMethod = phoneRestrictionMethod
+        self.lightSupports = phoneRestrictionMethod.normalized(lightSupports: lightSupports)
     }
 
     func setSelectedMirrorCards(_ cards: Set<Int>) {

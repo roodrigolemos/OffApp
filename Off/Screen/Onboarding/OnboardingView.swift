@@ -18,10 +18,10 @@ enum OnboardingStep {
     case impactLoading
     case socialImpact
     case baselineSnapshot
-    case planPresets
-    case planApps
+    case planRules
     case expectedResults
     case screenTimePermission
+    case screenTimeApps
     case reviewRequest
     case paywall
 }
@@ -57,15 +57,15 @@ struct OnboardingView: View {
             case .socialImpact:
                 SocialImpactView(onNext: { currentStep = .baselineSnapshot })
             case .baselineSnapshot:
-                BaselineSnapshotView(onNext: { currentStep = .planPresets })
-            case .planPresets:
-                PlanPresetsView(onNext: { currentStep = .planApps })
-            case .planApps:
-                PlanAppsView(onNext: { currentStep = .expectedResults })
+                BaselineSnapshotView(onNext: { currentStep = .planRules })
+            case .planRules:
+                PlanRulesView(onNext: { currentStep = .expectedResults })
             case .expectedResults:
                 ExpectedResultsView(onNext: { currentStep = .screenTimePermission })
             case .screenTimePermission:
-                ScreenTimePermissionView(onNext: { currentStep = .reviewRequest })
+                ScreenTimePermissionView(onNext: { currentStep = .screenTimeApps })
+            case .screenTimeApps:
+                ScreenTimeAppsView(onNext: { currentStep = .reviewRequest })
             case .reviewRequest:
                 ReviewRequestView(onNext: { currentStep = .paywall })
             case .paywall:
@@ -81,10 +81,15 @@ struct OnboardingView: View {
 
     private func completeOnboarding() {
         attributeManager.setInitialScores(ratings: onboardingManager.baselineRatings)
-        if let preset = onboardingManager.selectedPreset {
-            planManager.createPlan(preset: preset,
-                                   selectedApps: onboardingManager.selectedApps)
-        }
+        let windows = onboardingManager.timeBoundary == .duringWindows ? onboardingManager.timeWindows : []
+        planManager.createPlan(
+            name: onboardingManager.planName,
+            timeBoundary: onboardingManager.timeBoundary,
+            timeWindows: windows,
+            days: onboardingManager.days,
+            phoneRestrictionMethod: onboardingManager.phoneRestrictionMethod,
+            lightSupports: onboardingManager.lightSupports
+        )
 
         appState.updateViewState(showTabBarView: true)
     }

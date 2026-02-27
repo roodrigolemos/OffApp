@@ -45,7 +45,7 @@ struct OffApp: App {
     init() {
         do {
             let schema = Schema([AttributeScores.self, Plan.self, CheckIn.self, UrgeIntervention.self, WeeklyInsight.self])
-            let modelConfig = ModelConfiguration("Off.store", schema: schema)
+            let modelConfig = ModelConfiguration("Off.store.v2", schema: schema)
             container = try ModelContainer(for: schema, configurations: modelConfig)
         } catch {
             fatalError("Failed to configure SwiftData container.")

@@ -4,6 +4,8 @@
 //
 
 import SwiftUI
+import FamilyControls
+import ManagedSettingsUI
 
 struct PlanDetailsView: View {
 
@@ -12,8 +14,11 @@ struct PlanDetailsView: View {
     @Environment(UrgeManager.self) var urgeManager
     @Environment(InsightManager.self) var insightManager
     @Environment(StatsManager.self) var statsManager
+    @Environment(ScreenTimeManager.self) var screenTimeManager
 
-    @State private var showPlanSelection = false
+    @State private var showRulesEditor = false
+    @State private var showActivityPicker = false
+    @State private var activitySelection = FamilyActivitySelection()
 
     var body: some View {
         ZStack {
@@ -23,9 +28,10 @@ struct PlanDetailsView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 16) {
                         headerSection(plan)
+                        editActionsSection
                         scheduleSection(plan)
                         phoneRestrictionSection(plan)
-                        appsSection(plan)
+                        appsSection
                     }
                     .padding(.horizontal, 24)
                 }
@@ -35,38 +41,13 @@ struct PlanDetailsView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle("Plan Details")
-        .toolbar {
-            if planManager.activePlan != nil {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showPlanSelection = true
-                    } label: {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color.offAccent)
-                    }
-                }
-            }
-        }
-        .fullScreenCover(isPresented: $showPlanSelection, onDismiss: {
-            planManager.loadPlan()
-            statsManager.recalculate(
-                checkIns: checkInManager.checkIns,
-                activePlan: planManager.activePlan,
-                planHistory: planManager.planHistory,
-                interventions: urgeManager.interventions
-            )
-            insightManager.checkWeeklyInsightAvailability(
-                plan: planManager.activePlan,
-                checkIns: checkInManager.checkIns
-            )
-        }) {
+        .fullScreenCover(isPresented: $showRulesEditor, onDismiss: refreshPlanState) {
             NavigationStack {
-                PlanSelectionView(dismissFlow: $showPlanSelection)
+                PlanRulesEditView(dismissFlow: $showRulesEditor)
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) {
                             Button {
-                                showPlanSelection = false
+                                showRulesEditor = false
                             } label: {
                                 Image(systemName: "xmark")
                                     .font(.system(size: 15, weight: .semibold))
@@ -76,12 +57,38 @@ struct PlanDetailsView: View {
                     }
             }
         }
+        .familyActivityPicker(
+            isPresented: $showActivityPicker,
+            selection: $activitySelection
+        )
+        .onChange(of: activitySelection) {
+            screenTimeManager.updateSelection(activitySelection)
+        }
     }
 }
 
 // MARK: - Sections
 
 private extension PlanDetailsView {
+
+    var editActionsSection: some View {
+        HStack(spacing: 10) {
+            Button {
+                showRulesEditor = true
+            } label: {
+                editActionButton(title: "Edit Rules", icon: "slider.horizontal.3")
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                activitySelection = screenTimeManager.activitySelection
+                showActivityPicker = true
+            } label: {
+                editActionButton(title: "Edit Apps", icon: "app.badge.fill")
+            }
+            .buttonStyle(.plain)
+        }
+    }
 
     func headerSection(_ plan: PlanSnapshot) -> some View {
         VStack(spacing: 26) {
@@ -138,26 +145,9 @@ private extension PlanDetailsView {
         }
     }
     
-    func appsSection(_ plan: PlanSnapshot) -> some View {
+    var appsSection: some View {
         detailCard(title: "APPS") {
-            let apps = plan.selectedApps.sorted { $0.displayName < $1.displayName }
-            FlowLayout(spacing: 8) {
-                ForEach(apps, id: \.self) { app in
-                    HStack(spacing: 6) {
-                        Image(systemName: app.icon)
-                            .font(.system(size: 12, weight: .medium))
-                        Text(app.displayName)
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundStyle(Color.offAccent)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule()
-                            .fill(Color.offAccent.opacity(0.1))
-                    )
-                }
-            }
+            appsSelectionSection
         }
     }
 
@@ -170,20 +160,6 @@ private extension PlanDetailsView {
             Text("No active plan")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Color.offTextSecondary)
-
-            Button {
-                showPlanSelection = true
-            } label: {
-                Text("Create a Plan")
-                    .font(.system(size: 16, weight: .semibold))
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.offAccent)
-                    )
-                    .foregroundStyle(.white)
-            }
         }
     }
 }
@@ -191,6 +167,51 @@ private extension PlanDetailsView {
 // MARK: - Helper Views
 
 private extension PlanDetailsView {
+
+    var appsSelectionSection: some View {
+        let tokens = Array(screenTimeManager.activitySelection.applicationTokens)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Current Selection")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.offTextMuted)
+
+            if tokens.isEmpty {
+                Text("No specific apps selected")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Color.offTextPrimary)
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(tokens, id: \.self) { token in
+                        Label(token)
+                            .labelStyle(.titleOnly)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Color.offTextPrimary)
+                    }
+                }
+            }
+        }
+    }
+
+    func editActionButton(title: String, icon: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+        }
+        .foregroundStyle(Color.offAccent)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.offAccentSoft)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.offAccent.opacity(0.28), lineWidth: 1)
+        )
+    }
 
     func detailCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -240,6 +261,20 @@ private extension PlanDetailsView {
 
 private extension PlanDetailsView {
 
+    func refreshPlanState() {
+        planManager.loadPlan()
+        statsManager.recalculate(
+            checkIns: checkInManager.checkIns,
+            activePlan: planManager.activePlan,
+            planHistory: planManager.planHistory,
+            interventions: urgeManager.interventions
+        )
+        insightManager.checkWeeklyInsightAvailability(
+            plan: planManager.activePlan,
+            checkIns: checkInManager.checkIns
+        )
+    }
+
     func timeDescription(_ plan: PlanSnapshot) -> String {
         switch plan.timeBoundary {
         case .always:
@@ -279,50 +314,7 @@ private extension PlanDetailsView {
         let names = displayOrder.compactMap { lightSupports.contains($0) ? $0.displayName : nil }
         return names.joined(separator: ", ")
     }
-}
 
-// MARK: - Flow Layout
-
-private struct FlowLayout: Layout {
-
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = arrange(proposal: proposal, subviews: subviews)
-        return result.size
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = arrange(proposal: proposal, subviews: subviews)
-        for (index, position) in result.positions.enumerated() {
-            subviews[index].place(
-                at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y),
-                proposal: .unspecified
-            )
-        }
-    }
-
-    private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> (positions: [CGPoint], size: CGSize) {
-        let maxWidth = proposal.width ?? .infinity
-        var positions: [CGPoint] = []
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var rowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if x + size.width > maxWidth, x > 0 {
-                x = 0
-                y += rowHeight + spacing
-                rowHeight = 0
-            }
-            positions.append(CGPoint(x: x, y: y))
-            rowHeight = max(rowHeight, size.height)
-            x += size.width + spacing
-        }
-
-        return (positions, CGSize(width: maxWidth, height: y + rowHeight))
-    }
 }
 
 #Preview {

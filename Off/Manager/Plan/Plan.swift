@@ -11,7 +11,6 @@ final class Plan {
 
     var firstPlanCreatedAt: Date
     var createdAt: Date
-    var presetRawValue: String
     var selectedAppsRaw: [String]
 
     var name: String
@@ -23,8 +22,7 @@ final class Plan {
 
     init(from snapshot: PlanSnapshot) {
         self.firstPlanCreatedAt = snapshot.firstPlanCreatedAt
-        self.presetRawValue = snapshot.preset?.rawValue ?? ""
-        self.selectedAppsRaw = snapshot.selectedApps.map(\.rawValue)
+        self.selectedAppsRaw = []
         self.createdAt = snapshot.createdAt
         self.name = snapshot.name
         self.timeBoundaryRaw = snapshot.timeBoundary.rawValue
@@ -54,8 +52,6 @@ final class Plan {
         return PlanSnapshot(
             firstPlanCreatedAt: firstPlanCreatedAt,
             createdAt: createdAt,
-            preset: PlanPreset(rawValue: presetRawValue),
-            selectedApps: Set(selectedAppsRaw.compactMap { SocialApp(rawValue: $0) }),
             name: name,
             timeBoundary: timeBoundary,
             timeWindows: windows,
