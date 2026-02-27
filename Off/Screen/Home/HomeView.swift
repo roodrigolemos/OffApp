@@ -460,8 +460,8 @@ private extension HomeView {
                 Spacer()
 
                 VStack(alignment: .leading, spacing: 8) {
-                    if let whenText = planCardWhenText(for: plan) {
-                        planCardDetailRow(label: "NOT ALLOWED", value: whenText)
+                    if let blockedText = planCardBlockedText(for: plan) {
+                        planCardDetailRow(label: "BLOCKED", value: blockedText)
                     }
 
                     planCardDetailRow(label: "DAYS", value: planCardDaysText(for: plan))
@@ -824,13 +824,23 @@ private extension HomeView {
         return name
     }
 
-    func planCardWhenText(for plan: PlanSnapshot) -> String? {
+    func planCardBlockedText(for plan: PlanSnapshot) -> String? {
         switch plan.timeBoundary {
         case .duringWindows:
-            return "Blocked hours"
+            guard let window = plan.timeWindows.first else { return "Blocked" }
+            return "\(formatTime(hour: window.startHour, minute: window.startMinute))–\(formatTime(hour: window.endHour, minute: window.endMinute))"
         case .always:
             return "Always"
         }
+    }
+
+    func formatTime(hour: Int, minute: Int) -> String {
+        let period = hour >= 12 ? "PM" : "AM"
+        let displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour)
+        if minute == 0 {
+            return "\(displayHour) \(period)"
+        }
+        return "\(displayHour):\(String(format: "%02d", minute)) \(period)"
     }
 
     func planCardDaysText(for plan: PlanSnapshot) -> String {

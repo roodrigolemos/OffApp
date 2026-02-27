@@ -103,14 +103,14 @@ private extension PlanRulesView {
     var timeCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             cardHeader(icon: "clock.fill",
-                       title: "Set Times",
-                       subtitle: "When is social media not allowed?")
+                       title: "Schedule",
+                       subtitle: "When is social media blocked?")
 
             VStack(spacing: 10) {
                 timeOption(
                     icon: "clock.fill",
-                    label: "Blocked hours",
-                    description: "Not allowed during this range",
+                    label: "Range",
+                    description: "Block during a daily time window",
                     selected: timeBoundary == .duringWindows
                 ) { timeBoundary = .duringWindows }
 
@@ -129,7 +129,7 @@ private extension PlanRulesView {
                 timeOption(
                     icon: "xmark.circle.fill",
                     label: "Always",
-                    description: "Not allowed at any time",
+                    description: "Block at any time",
                     selected: timeBoundary == .always
                 ) { timeBoundary = .always }
             }

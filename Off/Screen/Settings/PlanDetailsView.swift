@@ -119,7 +119,7 @@ private extension PlanDetailsView {
     func scheduleSection(_ plan: PlanSnapshot) -> some View {
         detailCard(title: "SCHEDULE") {
             VStack(alignment: .leading, spacing: 12) {
-                detailRow(icon: "clock.fill", label: "Not allowed", value: timeDescription(plan))
+                detailRow(icon: "clock.fill", label: "Blocked", value: timeDescription(plan))
                 detailRow(icon: "calendar", label: "Days", value: daysDescription(plan.days))
             }
         }
@@ -280,7 +280,7 @@ private extension PlanDetailsView {
         case .always:
             return "Always"
         case .duringWindows:
-            guard let window = plan.timeWindows.first else { return "Blocked hours" }
+            guard let window = plan.timeWindows.first else { return "Blocked" }
             return "\(formatTime(hour: window.startHour, minute: window.startMinute))–\(formatTime(hour: window.endHour, minute: window.endMinute))"
         }
     }
