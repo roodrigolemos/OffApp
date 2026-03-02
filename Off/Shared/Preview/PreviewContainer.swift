@@ -17,7 +17,7 @@ struct PreviewContainer {
     static let checkInManager = CheckInManager(store: MockCheckInStore())
     static let urgeManager = UrgeManager(store: MockUrgeStore())
     static let insightManager = InsightManager(store: MockInsightStore(), aiService: MockAIService())
-    static let screenTimeManager = ScreenTimeManager()
+    static let screenTimeManager = ScreenTimeManager(store: MockScreenTimeStore())
     
     static func bootstrap() {
         bootstrapManager.bootstrap(

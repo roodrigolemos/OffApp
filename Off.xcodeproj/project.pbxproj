@@ -8,16 +8,49 @@
 
 /* Begin PBXBuildFile section */
 		B72BB46A2F4665A5008E9B66 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = B72BB4692F4665A5008E9B66 /* FirebaseFunctions */; };
+		B7E100072F50000000A1B2C3 /* OffShieldMonitorExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B7E100012F50000000A1B2C3 /* OffShieldMonitorExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		B7E1000E2F50000000A1B2C3 /* ScreenTimeSharedConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E1000F2F50000000A1B2C3 /* ScreenTimeSharedConstants.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B7E100092F50000000A1B2C3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B70ED9792F3D32C2002166F1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B7E1000D2F50000000A1B2C3;
+			remoteInfo = OffShieldMonitorExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B7E100062F50000000A1B2C3 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B7E100072F50000000A1B2C3 /* OffShieldMonitorExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		B70ED9812F3D32C2002166F1 /* Off.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Off.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B7E100012F50000000A1B2C3 /* OffShieldMonitorExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OffShieldMonitorExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B7E1000F2F50000000A1B2C3 /* ScreenTimeSharedConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Off/Shared/ScreenTime/ScreenTimeSharedConstants.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B70ED9832F3D32C2002166F1 /* Off */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Off;
+			sourceTree = "<group>";
+		};
+		B7E100022F50000000A1B2C3 /* OffShieldMonitorExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = OffShieldMonitorExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -31,6 +64,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B7E100042F50000000A1B2C3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -38,6 +78,8 @@
 			isa = PBXGroup;
 			children = (
 				B70ED9832F3D32C2002166F1 /* Off */,
+				B7E100022F50000000A1B2C3 /* OffShieldMonitorExtension */,
+				B7E1000F2F50000000A1B2C3 /* ScreenTimeSharedConstants.swift */,
 				B70ED9822F3D32C2002166F1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -46,6 +88,7 @@
 			isa = PBXGroup;
 			children = (
 				B70ED9812F3D32C2002166F1 /* Off.app */,
+				B7E100012F50000000A1B2C3 /* OffShieldMonitorExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -60,10 +103,12 @@
 				B70ED97D2F3D32C2002166F1 /* Sources */,
 				B70ED97E2F3D32C2002166F1 /* Frameworks */,
 				B70ED97F2F3D32C2002166F1 /* Resources */,
+				B7E100062F50000000A1B2C3 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B7E100082F50000000A1B2C3 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				B70ED9832F3D32C2002166F1 /* Off */,
@@ -76,6 +121,28 @@
 			productReference = B70ED9812F3D32C2002166F1 /* Off.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B7E1000D2F50000000A1B2C3 /* OffShieldMonitorExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B7E1000A2F50000000A1B2C3 /* Build configuration list for PBXNativeTarget "OffShieldMonitorExtension" */;
+			buildPhases = (
+				B7E100032F50000000A1B2C3 /* Sources */,
+				B7E100042F50000000A1B2C3 /* Frameworks */,
+				B7E100052F50000000A1B2C3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				B7E100022F50000000A1B2C3 /* OffShieldMonitorExtension */,
+			);
+			name = OffShieldMonitorExtension;
+			packageProductDependencies = (
+			);
+			productName = OffShieldMonitorExtension;
+			productReference = B7E100012F50000000A1B2C3 /* OffShieldMonitorExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -87,6 +154,9 @@
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					B70ED9802F3D32C2002166F1 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					B7E1000D2F50000000A1B2C3 = {
 						CreatedOnToolsVersion = 26.0;
 					};
 				};
@@ -109,12 +179,20 @@
 			projectRoot = "";
 			targets = (
 				B70ED9802F3D32C2002166F1 /* Off */,
+				B7E1000D2F50000000A1B2C3 /* OffShieldMonitorExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		B70ED97F2F3D32C2002166F1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B7E100052F50000000A1B2C3 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -131,7 +209,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B7E100032F50000000A1B2C3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B7E1000E2F50000000A1B2C3 /* ScreenTimeSharedConstants.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B7E100082F50000000A1B2C3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B7E1000D2F50000000A1B2C3 /* OffShieldMonitorExtension */;
+			targetProxy = B7E100092F50000000A1B2C3 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		B70ED98A2F3D32C3002166F1 /* Debug */ = {
@@ -321,6 +415,56 @@
 			};
 			name = Release;
 		};
+		B7E1000B2F50000000A1B2C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = OffShieldMonitorExtension/OffShieldMonitorExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5W2RVF994Q;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "OffShieldMonitorExtension-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = rlemosapp.Off.ShieldMonitorExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B7E1000C2F50000000A1B2C3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = OffShieldMonitorExtension/OffShieldMonitorExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5W2RVF994Q;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "OffShieldMonitorExtension-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = rlemosapp.Off.ShieldMonitorExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -338,6 +482,15 @@
 			buildConfigurations = (
 				B70ED98D2F3D32C3002166F1 /* Debug */,
 				B70ED98E2F3D32C3002166F1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B7E1000A2F50000000A1B2C3 /* Build configuration list for PBXNativeTarget "OffShieldMonitorExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B7E1000B2F50000000A1B2C3 /* Debug */,
+				B7E1000C2F50000000A1B2C3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

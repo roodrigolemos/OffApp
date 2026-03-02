@@ -41,15 +41,19 @@ struct OffApp: App {
 
     private let container: ModelContainer
     private let config: BuildConfiguration
+    private let userDefaults: UserDefaults
+    private let swiftDataContainerName = "Off.store"
 
     init() {
         do {
             let schema = Schema([AttributeScores.self, Plan.self, CheckIn.self, UrgeIntervention.self, WeeklyInsight.self])
-            let modelConfig = ModelConfiguration("Off.store.v2", schema: schema)
+            let modelConfig = ModelConfiguration(swiftDataContainerName, schema: schema)
             container = try ModelContainer(for: schema, configurations: modelConfig)
         } catch {
             fatalError("Failed to configure SwiftData container.")
         }
+        
+        userDefaults = UserDefaults(suiteName: ScreenTimeSharedConstants.appGroupIdentifier) ?? .standard
 
         #if MOCK
         config = .mock
@@ -62,17 +66,18 @@ struct OffApp: App {
         _appState = State(initialValue: AppState())
         _onboardingManager = State(initialValue: OnboardingManager())
         _statsManager = State(initialValue: StatsManager())
-        _screenTimeManager = State(initialValue: ScreenTimeManager())
         _bootstrapManager = State(initialValue: BootstrapManager())
 
         switch config {
         case .mock:
+            _screenTimeManager = State(initialValue: ScreenTimeManager(store: MockScreenTimeStore()))
             _attributeManager = State(initialValue: AttributeManager(store: MockAttributeStore()))
             _planManager = State(initialValue: PlanManager(store: MockPlanStore()))
             _checkInManager = State(initialValue: CheckInManager(store: MockCheckInStore()))
             _urgeManager = State(initialValue: UrgeManager(store: MockUrgeStore()))
             _insightManager = State(initialValue: InsightManager(store: MockInsightStore(), aiService: MockAIService()))
         case .dev, .prod:
+            _screenTimeManager = State(initialValue: ScreenTimeManager(store: SharedScreenTimeStore(defaults: userDefaults)))
             _attributeManager = State(initialValue: AttributeManager(
                 store: SwiftDataAttributeStore(context: container.mainContext)
             ))
@@ -116,6 +121,7 @@ struct OffApp: App {
                         statsManager: statsManager,
                         screenTimeManager: screenTimeManager
                     )
+                    screenTimeManager.syncShielding(activePlan: planManager.activePlan)
                 }
                 .onChange(of: scenePhase) { _, newPhase in
                     guard newPhase == .active else { return }
@@ -128,6 +134,16 @@ struct OffApp: App {
                         statsManager: statsManager,
                         screenTimeManager: screenTimeManager
                     )
+                    screenTimeManager.syncShielding(activePlan: planManager.activePlan)
+                }
+                .onChange(of: planManager.activePlan) { _, _ in
+                    screenTimeManager.syncShielding(activePlan: planManager.activePlan)
+                }
+                .onChange(of: screenTimeManager.selectionDigest) { _, _ in
+                    screenTimeManager.syncShielding(activePlan: planManager.activePlan)
+                }
+                .onChange(of: screenTimeManager.authorizationStatus) { _, _ in
+                    screenTimeManager.syncShielding(activePlan: planManager.activePlan)
                 }
         }
     }

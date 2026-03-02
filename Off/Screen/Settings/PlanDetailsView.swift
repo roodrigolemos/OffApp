@@ -141,6 +141,14 @@ private extension PlanDetailsView {
                         value: lightSupportsDescription(plan.lightSupports)
                     )
                 }
+
+                if plan.phoneRestrictionMethod == .screenTime && !screenTimeManager.hasSelectedActivity {
+                    warningRow(
+                        icon: "exclamationmark.triangle.fill",
+                        title: "No apps selected",
+                        message: "Screen Time shielding is inactive until you select apps."
+                    )
+                }
             }
         }
     }
@@ -254,6 +262,36 @@ private extension PlanDetailsView {
                     .foregroundStyle(Color.offTextPrimary)
             }
         }
+    }
+
+    func warningRow(icon: String, title: String, message: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.offWarn)
+                .padding(.top, 1)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Color.offWarn)
+                Text(message)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Color.offTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.offWarn.opacity(0.09))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.offWarn.opacity(0.35), lineWidth: 1)
+        )
     }
 }
 
