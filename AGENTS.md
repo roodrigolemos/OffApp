@@ -191,3 +191,4 @@ Shared/
 - Snapshots isolate UI from persistence
 - Bootstrap handles lifecycle loading
 - Logic duplication is not allowed
+- No digits in identifiers or filenames — spell numbers out (e.g., seven, six)
