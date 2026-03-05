@@ -7,7 +7,7 @@ import Foundation
 import FamilyControls
 
 struct ScreenTimeShieldingPlanConfig: Codable {
-    var phoneRestrictionMethodRaw: String
+    var phoneRestrictionModeRaw: String
     var timeBoundaryRaw: String
     var daysRaw: Int
     var startHour: Int?
@@ -17,9 +17,7 @@ struct ScreenTimeShieldingPlanConfig: Codable {
 }
 
 @MainActor
-protocol ScreenTimeStore {
-    func loadSelection() throws -> FamilyActivitySelection
-    func saveSelection(_ selection: FamilyActivitySelection) throws
+protocol ScreenTimeStore: SelectionStore {
     func loadPlanConfig() throws -> ScreenTimeShieldingPlanConfig?
     func savePlanConfig(_ config: ScreenTimeShieldingPlanConfig?) throws
 }

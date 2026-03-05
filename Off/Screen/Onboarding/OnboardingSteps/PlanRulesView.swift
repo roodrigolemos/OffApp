@@ -13,7 +13,7 @@ struct PlanRulesView: View {
     @State private var timeBoundary: TimeBoundary = .duringWindows
     @State private var timeWindows: [TimeWindowValue] = [PlanTimeWindowRules.defaultWindow]
     @State private var days: DaysOfWeek = .everyday
-    @State private var phoneRestrictionMethod: PhoneRestrictionMethod = .none
+    @State private var phoneRestrictionMode: PhoneRestrictionMode = .none
     @State private var lightSupports: Set<LightSupport> = []
     @State private var hasLoadedState = false
 
@@ -47,14 +47,14 @@ struct PlanRulesView: View {
             timeWindows = manager.timeWindows
             normalizeTimeWindows()
             days = manager.days
-            phoneRestrictionMethod = manager.phoneRestrictionMethod
+            phoneRestrictionMode = manager.phoneRestrictionMode
             lightSupports = manager.lightSupports
         }
         .onChange(of: timeBoundary) {
             normalizeTimeWindows()
         }
-        .onChange(of: phoneRestrictionMethod) {
-            lightSupports = phoneRestrictionMethod.normalized(lightSupports: lightSupports)
+        .onChange(of: phoneRestrictionMode) {
+            lightSupports = phoneRestrictionMode.normalized(lightSupports: lightSupports)
         }
     }
 }
@@ -138,11 +138,11 @@ private extension PlanRulesView {
     }
 
     var shouldShowLightSupports: Bool {
-        phoneRestrictionMethod != .deleteApps
+        phoneRestrictionMode != .deleteApps
     }
 
     var availableLightSupports: [LightSupport] {
-        switch phoneRestrictionMethod {
+        switch phoneRestrictionMode {
         case .none:
             return [.notificationsOff, .removeFromHomeScreen, .logOut]
         case .screenTime:
@@ -161,27 +161,27 @@ private extension PlanRulesView {
                     icon: "sparkles",
                     label: "No restriction",
                     description: "Use lighter supports without hard phone blocks",
-                    selected: phoneRestrictionMethod == .none
+                    selected: phoneRestrictionMode == .none
                 ) {
-                    phoneRestrictionMethod = .none
+                    phoneRestrictionMode = .none
                 }
 
                 restrictionOption(
                     icon: "shield.fill",
                     label: "iOS Screen Time Shielding",
                     description: "Rely on scheduled shield restrictions",
-                    selected: phoneRestrictionMethod == .screenTime
+                    selected: phoneRestrictionMode == .screenTime
                 ) {
-                    phoneRestrictionMethod = .screenTime
+                    phoneRestrictionMode = .screenTime
                 }
 
                 restrictionOption(
                     icon: "trash.fill",
                     label: "Delete apps from iPhone",
                     description: "Remove social apps from your phone",
-                    selected: phoneRestrictionMethod == .deleteApps
+                    selected: phoneRestrictionMode == .deleteApps
                 ) {
-                    phoneRestrictionMethod = .deleteApps
+                    phoneRestrictionMode = .deleteApps
                 }
             }
         }
@@ -231,7 +231,7 @@ private extension PlanRulesView {
                 timeBoundary: timeBoundary,
                 timeWindows: windows,
                 days: days,
-                phoneRestrictionMethod: phoneRestrictionMethod,
+                phoneRestrictionMode: phoneRestrictionMode,
                 lightSupports: lightSupports
             )
             onNext()

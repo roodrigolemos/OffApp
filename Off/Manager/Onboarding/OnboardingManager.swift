@@ -16,7 +16,7 @@ final class OnboardingManager {
     var timeBoundary: TimeBoundary = .duringWindows
     var timeWindows: [TimeWindowValue] = [PlanTimeWindowRules.defaultWindow]
     var days: DaysOfWeek = .everyday
-    var phoneRestrictionMethod: PhoneRestrictionMethod = .none
+    var phoneRestrictionMode: PhoneRestrictionMode = .none
     var lightSupports: Set<LightSupport> = []
     var selectedMirrorCards: Set<Int> = []
 
@@ -33,7 +33,7 @@ final class OnboardingManager {
         timeBoundary: TimeBoundary,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
-        phoneRestrictionMethod: PhoneRestrictionMethod,
+        phoneRestrictionMode: PhoneRestrictionMode,
         lightSupports: Set<LightSupport>
     ) {
         let normalizedWindows = PlanTimeWindowRules.normalized(timeBoundary: timeBoundary, timeWindows: timeWindows)
@@ -41,8 +41,8 @@ final class OnboardingManager {
         self.timeBoundary = timeBoundary
         self.timeWindows = normalizedWindows
         self.days = days
-        self.phoneRestrictionMethod = phoneRestrictionMethod
-        self.lightSupports = phoneRestrictionMethod.normalized(lightSupports: lightSupports)
+        self.phoneRestrictionMode = phoneRestrictionMode
+        self.lightSupports = phoneRestrictionMode.normalized(lightSupports: lightSupports)
     }
 
     func setSelectedMirrorCards(_ cards: Set<Int>) {

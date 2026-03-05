@@ -36,6 +36,7 @@ struct OffApp: App {
     @State private var urgeManager: UrgeManager
     @State private var insightManager: InsightManager
     @State private var statsManager: StatsManager
+    @State private var usageManager: UsageManager
     @State private var screenTimeManager: ScreenTimeManager
     @State private var bootstrapManager: BootstrapManager
 
@@ -66,6 +67,7 @@ struct OffApp: App {
         _appState = State(initialValue: AppState())
         _onboardingManager = State(initialValue: OnboardingManager())
         _statsManager = State(initialValue: StatsManager())
+        _usageManager = State(initialValue: UsageManager())
         _bootstrapManager = State(initialValue: BootstrapManager())
 
         switch config {
@@ -109,6 +111,7 @@ struct OffApp: App {
                 .environment(urgeManager)
                 .environment(insightManager)
                 .environment(statsManager)
+                .environment(usageManager)
                 .environment(screenTimeManager)
                 .environment(bootstrapManager)
                 .task {
@@ -119,7 +122,8 @@ struct OffApp: App {
                         insightManager: insightManager,
                         urgeManager: urgeManager,
                         statsManager: statsManager,
-                        screenTimeManager: screenTimeManager
+                        screenTimeManager: screenTimeManager,
+                        usageManager: usageManager
                     )
                     screenTimeManager.syncShielding(activePlan: planManager.activePlan)
                 }
@@ -132,18 +136,31 @@ struct OffApp: App {
                         insightManager: insightManager,
                         urgeManager: urgeManager,
                         statsManager: statsManager,
-                        screenTimeManager: screenTimeManager
+                        screenTimeManager: screenTimeManager,
+                        usageManager: usageManager
                     )
                     screenTimeManager.syncShielding(activePlan: planManager.activePlan)
                 }
                 .onChange(of: planManager.activePlan) { _, _ in
                     screenTimeManager.syncShielding(activePlan: planManager.activePlan)
+                    usageManager.recalculate(
+                        activePlan: planManager.activePlan,
+                        trackingState: screenTimeManager.usageTrackingState
+                    )
                 }
                 .onChange(of: screenTimeManager.selectionDigest) { _, _ in
                     screenTimeManager.syncShielding(activePlan: planManager.activePlan)
+                    usageManager.recalculate(
+                        activePlan: planManager.activePlan,
+                        trackingState: screenTimeManager.usageTrackingState
+                    )
                 }
                 .onChange(of: screenTimeManager.authorizationStatus) { _, _ in
                     screenTimeManager.syncShielding(activePlan: planManager.activePlan)
+                    usageManager.recalculate(
+                        activePlan: planManager.activePlan,
+                        trackingState: screenTimeManager.usageTrackingState
+                    )
                 }
         }
     }

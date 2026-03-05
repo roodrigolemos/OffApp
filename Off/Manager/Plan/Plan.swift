@@ -17,7 +17,7 @@ final class Plan {
     var timeBoundaryRaw: String
     var timeWindowsData: [[String: Int]]
     var daysRaw: Int
-    var phoneRestrictionMethodRaw: String
+    var phoneRestrictionModeRaw: String
     var lightSupportsRaw: [String]
 
     init(from snapshot: PlanSnapshot) {
@@ -30,7 +30,7 @@ final class Plan {
             ["sh": tw.startHour, "sm": tw.startMinute, "eh": tw.endHour, "em": tw.endMinute]
         }
         self.daysRaw = snapshot.days.rawValue
-        self.phoneRestrictionMethodRaw = snapshot.phoneRestrictionMethod.rawValue
+        self.phoneRestrictionModeRaw = snapshot.phoneRestrictionMode.rawValue
         self.lightSupportsRaw = snapshot.lightSupports.map(\.rawValue)
     }
 
@@ -46,7 +46,7 @@ final class Plan {
         }
         let normalizedWindows = PlanTimeWindowRules.normalized(timeBoundary: timeBoundary, timeWindows: windows)
 
-        let restrictionMethod = PhoneRestrictionMethod(rawValue: phoneRestrictionMethodRaw) ?? .none
+        let restrictionMethod = PhoneRestrictionMode(rawValue: phoneRestrictionModeRaw) ?? .none
         let lightSupports = Set(lightSupportsRaw.compactMap { LightSupport(rawValue: $0) })
         let normalizedLightSupports = restrictionMethod.normalized(lightSupports: lightSupports)
 
@@ -57,7 +57,7 @@ final class Plan {
             timeBoundary: timeBoundary,
             timeWindows: normalizedWindows,
             days: DaysOfWeek(rawValue: daysRaw),
-            phoneRestrictionMethod: restrictionMethod,
+            phoneRestrictionMode: restrictionMethod,
             lightSupports: normalizedLightSupports
         )
     }

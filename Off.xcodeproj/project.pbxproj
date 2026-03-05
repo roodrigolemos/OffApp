@@ -9,7 +9,10 @@
 /* Begin PBXBuildFile section */
 		B72BB46A2F4665A5008E9B66 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = B72BB4692F4665A5008E9B66 /* FirebaseFunctions */; };
 		B7E100072F50000000A1B2C3 /* OffShieldMonitorExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B7E100012F50000000A1B2C3 /* OffShieldMonitorExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		B7E1000E2F50000000A1B2C3 /* ScreenTimeSharedConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E1000F2F50000000A1B2C3 /* ScreenTimeSharedConstants.swift */; };
+		B7E1000E2F50000000A1B2C3 /* Off/Shared/ScreenTime/ScreenTimeSharedConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E1000F2F50000000A1B2C3 /* Off/Shared/ScreenTime/ScreenTimeSharedConstants.swift */; };
+		B7E200012F60000000A1B2C3 /* OffUsageReportExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B7E200052F60000000A1B2C3 /* OffUsageReportExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		B7E200022F60000000A1B2C3 /* Off/Shared/Extensions/UsageFormatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E200062F60000000A1B2C3 /* Off/Shared/Extensions/UsageFormatters.swift */; };
+		B7E200032F60000000A1B2C3 /* Off/Shared/ScreenTime/UsageReportContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E200072F60000000A1B2C3 /* Off/Shared/ScreenTime/UsageReportContext.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -19,6 +22,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = B7E1000D2F50000000A1B2C3;
 			remoteInfo = OffShieldMonitorExtension;
+		};
+		B7E200042F60000000A1B2C3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B70ED9792F3D32C2002166F1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B7E2000A2F60000000A1B2C3;
+			remoteInfo = OffUsageReportExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -30,6 +40,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				B7E100072F50000000A1B2C3 /* OffShieldMonitorExtension.appex in Embed App Extensions */,
+				B7E200012F60000000A1B2C3 /* OffUsageReportExtension.appex in Embed App Extensions */,
 			);
 			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -39,7 +50,10 @@
 /* Begin PBXFileReference section */
 		B70ED9812F3D32C2002166F1 /* Off.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Off.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B7E100012F50000000A1B2C3 /* OffShieldMonitorExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OffShieldMonitorExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		B7E1000F2F50000000A1B2C3 /* ScreenTimeSharedConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Off/Shared/ScreenTime/ScreenTimeSharedConstants.swift; sourceTree = SOURCE_ROOT; };
+		B7E1000F2F50000000A1B2C3 /* Off/Shared/ScreenTime/ScreenTimeSharedConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Off/Shared/ScreenTime/ScreenTimeSharedConstants.swift; sourceTree = SOURCE_ROOT; };
+		B7E200052F60000000A1B2C3 /* OffUsageReportExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OffUsageReportExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B7E200062F60000000A1B2C3 /* Off/Shared/Extensions/UsageFormatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Off/Shared/Extensions/UsageFormatters.swift; sourceTree = SOURCE_ROOT; };
+		B7E200072F60000000A1B2C3 /* Off/Shared/ScreenTime/UsageReportContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Off/Shared/ScreenTime/UsageReportContext.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -51,6 +65,11 @@
 		B7E100022F50000000A1B2C3 /* OffShieldMonitorExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = OffShieldMonitorExtension;
+			sourceTree = "<group>";
+		};
+		B7E200082F60000000A1B2C3 /* OffUsageReportExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = OffUsageReportExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -71,32 +90,43 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B7E200092F60000000A1B2C3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		B70ED9782F3D32C2002166F1 = {
-			isa = PBXGroup;
-			children = (
-				B70ED9832F3D32C2002166F1 /* Off */,
-				B7E100022F50000000A1B2C3 /* OffShieldMonitorExtension */,
-				B7E1000F2F50000000A1B2C3 /* ScreenTimeSharedConstants.swift */,
-				B70ED9822F3D32C2002166F1 /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		B70ED9822F3D32C2002166F1 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				B70ED9812F3D32C2002166F1 /* Off.app */,
-				B7E100012F50000000A1B2C3 /* OffShieldMonitorExtension.appex */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
+			B70ED9782F3D32C2002166F1 = {
+				isa = PBXGroup;
+				children = (
+					B70ED9832F3D32C2002166F1 /* Off */,
+					B7E100022F50000000A1B2C3 /* OffShieldMonitorExtension */,
+					B7E200082F60000000A1B2C3 /* OffUsageReportExtension */,
+					B7E1000F2F50000000A1B2C3 /* Off/Shared/ScreenTime/ScreenTimeSharedConstants.swift */,
+					B7E200062F60000000A1B2C3 /* Off/Shared/Extensions/UsageFormatters.swift */,
+					B7E200072F60000000A1B2C3 /* Off/Shared/ScreenTime/UsageReportContext.swift */,
+					B70ED9822F3D32C2002166F1 /* Products */,
+				);
+				sourceTree = "<group>";
+			};
+			B70ED9822F3D32C2002166F1 /* Products */ = {
+				isa = PBXGroup;
+				children = (
+					B70ED9812F3D32C2002166F1 /* Off.app */,
+					B7E100012F50000000A1B2C3 /* OffShieldMonitorExtension.appex */,
+					B7E200052F60000000A1B2C3 /* OffUsageReportExtension.appex */,
+				);
+				name = Products;
+				sourceTree = "<group>";
+			};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		B70ED9802F3D32C2002166F1 /* Off */ = {
+			B70ED9802F3D32C2002166F1 /* Off */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = B70ED98C2F3D32C3002166F1 /* Build configuration list for PBXNativeTarget "Off" */;
 			buildPhases = (
@@ -107,9 +137,10 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-				B7E100082F50000000A1B2C3 /* PBXTargetDependency */,
-			);
+				dependencies = (
+					B7E100082F50000000A1B2C3 /* PBXTargetDependency */,
+					B7E2000D2F60000000A1B2C3 /* PBXTargetDependency */,
+				);
 			fileSystemSynchronizedGroups = (
 				B70ED9832F3D32C2002166F1 /* Off */,
 			);
@@ -121,7 +152,7 @@
 			productReference = B70ED9812F3D32C2002166F1 /* Off.app */;
 			productType = "com.apple.product-type.application";
 		};
-		B7E1000D2F50000000A1B2C3 /* OffShieldMonitorExtension */ = {
+			B7E1000D2F50000000A1B2C3 /* OffShieldMonitorExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = B7E1000A2F50000000A1B2C3 /* Build configuration list for PBXNativeTarget "OffShieldMonitorExtension" */;
 			buildPhases = (
@@ -140,9 +171,31 @@
 			packageProductDependencies = (
 			);
 			productName = OffShieldMonitorExtension;
-			productReference = B7E100012F50000000A1B2C3 /* OffShieldMonitorExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
+				productReference = B7E100012F50000000A1B2C3 /* OffShieldMonitorExtension.appex */;
+				productType = "com.apple.product-type.app-extension";
+			};
+			B7E2000A2F60000000A1B2C3 /* OffUsageReportExtension */ = {
+				isa = PBXNativeTarget;
+				buildConfigurationList = B7E200102F60000000A1B2C3 /* Build configuration list for PBXNativeTarget "OffUsageReportExtension" */;
+				buildPhases = (
+					B7E2000C2F60000000A1B2C3 /* Sources */,
+					B7E200092F60000000A1B2C3 /* Frameworks */,
+					B7E2000B2F60000000A1B2C3 /* Resources */,
+				);
+				buildRules = (
+				);
+				dependencies = (
+				);
+				fileSystemSynchronizedGroups = (
+					B7E200082F60000000A1B2C3 /* OffUsageReportExtension */,
+				);
+				name = OffUsageReportExtension;
+				packageProductDependencies = (
+				);
+				productName = OffUsageReportExtension;
+				productReference = B7E200052F60000000A1B2C3 /* OffUsageReportExtension.appex */;
+				productType = "com.apple.product-type.extensionkit-extension";
+			};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -157,6 +210,9 @@
 						CreatedOnToolsVersion = 26.0;
 					};
 					B7E1000D2F50000000A1B2C3 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					B7E2000A2F60000000A1B2C3 = {
 						CreatedOnToolsVersion = 26.0;
 					};
 				};
@@ -180,6 +236,7 @@
 			targets = (
 				B70ED9802F3D32C2002166F1 /* Off */,
 				B7E1000D2F50000000A1B2C3 /* OffShieldMonitorExtension */,
+				B7E2000A2F60000000A1B2C3 /* OffUsageReportExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -193,6 +250,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B7E100052F50000000A1B2C3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B7E2000B2F60000000A1B2C3 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -213,7 +277,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B7E1000E2F50000000A1B2C3 /* ScreenTimeSharedConstants.swift in Sources */,
+				B7E1000E2F50000000A1B2C3 /* Off/Shared/ScreenTime/ScreenTimeSharedConstants.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B7E2000C2F60000000A1B2C3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B7E200022F60000000A1B2C3 /* Off/Shared/Extensions/UsageFormatters.swift in Sources */,
+				B7E200032F60000000A1B2C3 /* Off/Shared/ScreenTime/UsageReportContext.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -224,6 +297,11 @@
 			isa = PBXTargetDependency;
 			target = B7E1000D2F50000000A1B2C3 /* OffShieldMonitorExtension */;
 			targetProxy = B7E100092F50000000A1B2C3 /* PBXContainerItemProxy */;
+		};
+		B7E2000D2F60000000A1B2C3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B7E2000A2F60000000A1B2C3 /* OffUsageReportExtension */;
+			targetProxy = B7E200042F60000000A1B2C3 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -465,6 +543,56 @@
 			};
 			name = Release;
 		};
+		B7E2000E2F60000000A1B2C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = OffUsageReportExtension/OffUsageReportExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5W2RVF994Q;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "OffUsageReportExtension-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = rlemosapp.Off.UsageReportExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B7E2000F2F60000000A1B2C3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = OffUsageReportExtension/OffUsageReportExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5W2RVF994Q;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "OffUsageReportExtension-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = rlemosapp.Off.UsageReportExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -491,6 +619,15 @@
 			buildConfigurations = (
 				B7E1000B2F50000000A1B2C3 /* Debug */,
 				B7E1000C2F50000000A1B2C3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B7E200102F60000000A1B2C3 /* Build configuration list for PBXNativeTarget "OffUsageReportExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B7E2000E2F60000000A1B2C3 /* Debug */,
+				B7E2000F2F60000000A1B2C3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -131,7 +131,7 @@ private extension PlanDetailsView {
                 detailRow(
                     icon: "iphone",
                     label: "Restriction",
-                    value: plan.phoneRestrictionMethod.displayName
+                    value: plan.phoneRestrictionMode.displayName
                 )
 
                 if !plan.lightSupports.isEmpty {
@@ -142,7 +142,7 @@ private extension PlanDetailsView {
                     )
                 }
 
-                if plan.phoneRestrictionMethod == .screenTime && !screenTimeManager.hasSelectedActivity {
+                if plan.phoneRestrictionMode == .screenTime && !screenTimeManager.hasSelectedActivity {
                     warningRow(
                         icon: "exclamationmark.triangle.fill",
                         title: "No apps selected",

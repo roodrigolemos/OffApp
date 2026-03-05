@@ -25,7 +25,7 @@ final class MockPlanStore: PlanStore {
                 timeBoundary: .always,
                 timeWindows: [],
                 days: .weekdays,
-                phoneRestrictionMethod: .deleteApps,
+                phoneRestrictionMode: .deleteApps,
                 lightSupports: []
             ),
             PlanSnapshot(
@@ -35,7 +35,7 @@ final class MockPlanStore: PlanStore {
                 timeBoundary: .duringWindows,
                 timeWindows: [PlanTimeWindowRules.defaultWindow],
                 days: .everyday,
-                phoneRestrictionMethod: .screenTime,
+                phoneRestrictionMode: .screenTime,
                 lightSupports: [.notificationsOff, .removeFromHomeScreen]
             )
         ]

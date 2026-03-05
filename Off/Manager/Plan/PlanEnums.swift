@@ -14,7 +14,7 @@ enum PlanVisuals {
     static let defaultIcon = "target"
 }
 
-enum PhoneRestrictionMethod: String, Codable, CaseIterable, Hashable {
+enum PhoneRestrictionMode: String, Codable, CaseIterable, Hashable {
     case none
     case screenTime
     case deleteApps

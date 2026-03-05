@@ -7,15 +7,21 @@
 
 import SwiftUI
 import Charts
+import FamilyControls
 
 struct ProgresssView: View {
 
     @Environment(AttributeManager.self) var attributeManager
+    @Environment(PlanManager.self) var planManager
+    @Environment(ScreenTimeManager.self) var screenTimeManager
     @Environment(StatsManager.self) var statsManager
+    @Environment(UsageManager.self) var usageManager
 
     @State private var showArchive: Bool = false
-    @State private var isUsageExpanded: Bool = false
     @State private var selectedMonthIndex: Int = 0
+    @State private var showActivityPicker: Bool = false
+    @State private var showUsageReport: Bool = false
+    @State private var activitySelection: FamilyActivitySelection = FamilyActivitySelection()
 
     var body: some View {
         NavigationStack {
@@ -36,6 +42,43 @@ struct ProgresssView: View {
                 }
                 .scrollIndicators(.hidden)
             }
+            .navigationDestination(isPresented: $showUsageReport) {
+                UsageReportView()
+            }
+            .familyActivityPicker(
+                isPresented: $showActivityPicker,
+                selection: $activitySelection
+            )
+            .onChange(of: activitySelection) {
+                screenTimeManager.updateSelection(activitySelection)
+                recalculateUsageState()
+            }
+            .onChange(of: screenTimeManager.authorizationStatus) {
+                recalculateUsageState()
+            }
+            .onChange(of: screenTimeManager.selectionDigest) {
+                recalculateUsageState()
+            }
+            .onChange(of: planManager.activePlan) {
+                recalculateUsageState()
+            }
+            .onAppear {
+                activitySelection = screenTimeManager.activitySelection
+                recalculateUsageState()
+            }
+            .alert(
+                "Error",
+                isPresented: .init(
+                    get: { screenTimeManager.error != nil },
+                    set: { if !$0 { screenTimeManager.error = nil } }
+                ),
+                actions: {
+                    Button("OK") { screenTimeManager.error = nil }
+                },
+                message: {
+                    Text(screenTimeManager.error?.localizedDescription ?? "")
+                }
+            )
         }
     }
 }
@@ -131,10 +174,43 @@ private extension ProgresssView {
 
     var usageDataSection: some View {
         VStack(alignment: .leading, spacing: 18) {
-            usageDataHeader
+            Text("USAGE DATA")
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundStyle(Color.offTextMuted)
+                .tracking(1.6)
 
-            if isUsageExpanded {
-                usageDataContent
+            switch usageManager.snapshot.state {
+            case .lockedTracking:
+                UsageLockedTrackingCardView {
+                    Task {
+                        await screenTimeManager.requestAuthorization()
+                        openSelectionPicker()
+                    }
+                }
+            case .requiredScreenTimePermission:
+                UsageRequiredSetupCardView(
+                    title: "Screen Time required",
+                    bodyText: "This plan needs Screen Time access to block apps and show usage.",
+                    ctaTitle: "Enable Screen Time"
+                ) {
+                    Task {
+                        await screenTimeManager.requestAuthorization()
+                    }
+                }
+            case .requiredSelection:
+                UsageRequiredSetupCardView(
+                    title: "Choose apps",
+                    bodyText: "Select the apps Off should block and track.",
+                    ctaTitle: "Select apps"
+                ) {
+                    openSelectionPicker()
+                }
+            case .usageEnabled:
+                UsageOpenReportCardView {
+                    showUsageReport = true
+                }
+            case .removalImpact(let daysSinceRemoval):
+                UsageRemovalImpactCardView(daysSinceRemoval: daysSinceRemoval)
             }
         }
         .padding(.horizontal, 24)
@@ -145,6 +221,18 @@ private extension ProgresssView {
 // MARK: - Helper Views
 
 private extension ProgresssView {
+
+    func openSelectionPicker() {
+        activitySelection = screenTimeManager.activitySelection
+        showActivityPicker = true
+    }
+
+    func recalculateUsageState() {
+        usageManager.recalculate(
+            activePlan: planManager.activePlan,
+            trackingState: screenTimeManager.usageTrackingState
+        )
+    }
 
     var trendChartsGrid: some View {
         let scores = attributeManager.scores
@@ -780,165 +868,6 @@ private extension ProgresssView {
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 
-    var usageDataHeader: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                isUsageExpanded.toggle()
-            }
-        } label: {
-            HStack(spacing: 8) {
-                Text("USAGE DATA")
-                    .font(.system(size: 12, weight: .heavy))
-                    .foregroundStyle(Color.offTextMuted)
-                    .tracking(1.6)
-
-                Spacer()
-
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.offTextMuted)
-                    .rotationEffect(.degrees(isUsageExpanded ? 180 : 0))
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
-    var usageDataContent: some View {
-        VStack(spacing: 14) {
-            usageTotalCard
-            usageBreakdownCard
-            usageTrendCard
-        }
-        .transition(.opacity.combined(with: .move(edge: .top)))
-    }
-
-    var usageTotalCard: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.offBackgroundSecondary)
-
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("2.4h/day")
-                        .font(.system(size: 22, weight: .heavy))
-                        .foregroundStyle(Color.offTextPrimary)
-
-                    Text("average screen time")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color.offTextSecondary)
-                }
-
-                Spacer()
-
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.down")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(Color.offSuccess)
-
-                    Text("34% from baseline")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.offSuccess)
-                }
-            }
-            .padding(22)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.offStroke, lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
-    }
-
-    var usageBreakdownCard: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.offBackgroundSecondary)
-
-            VStack(alignment: .leading, spacing: 14) {
-                Text("App Breakdown")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Color.offTextPrimary)
-
-                VStack(spacing: 12) {
-                    appRow(icon: "camera.fill", name: "Instagram", time: "1.2h")
-                    appRow(icon: "play.rectangle.fill", name: "TikTok", time: "0.8h")
-                    appRow(icon: "play.tv.fill", name: "YouTube", time: "0.4h")
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(22)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.offStroke, lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
-    }
-
-    var usageTrendCard: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.offBackgroundSecondary)
-
-            VStack(alignment: .leading, spacing: 14) {
-                Text("30-Day Usage Trend")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Color.offTextPrimary)
-
-                usageTrendChart
-            }
-            .padding(20)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.offStroke, lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
-    }
-
-    var usageTrendChart: some View {
-        let points = usageTrendData.enumerated().map { ChartPoint(id: $0.offset, value: $0.element) }
-        return Chart {
-            ForEach(points) { point in
-                BarMark(
-                    x: .value("Day", point.id),
-                    y: .value("Hours", point.value)
-                )
-                .foregroundStyle(Color.offAccent.opacity(0.6))
-            }
-        }
-        .chartXAxis(.hidden)
-        .chartYAxis {
-            AxisMarks(values: [0, 2, 4]) { _ in
-                AxisValueLabel()
-            }
-        }
-        .frame(height: 120)
-    }
-
-    func appRow(icon: String, name: String, time: String) -> some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color.offAccent.opacity(0.1))
-                    .frame(width: 32, height: 32)
-
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.offAccent)
-            }
-
-            Text(name)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(Color.offTextPrimary)
-
-            Spacer()
-
-            Text(time)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(Color.offTextSecondary)
-        }
-    }
 }
 
 // MARK: - Helpers
@@ -1082,14 +1011,4 @@ private extension ProgresssView {
         }
     }
 
-    var usageTrendData: [Double] {
-        [4.2, 4.0, 3.8, 4.1, 3.9, 3.7, 3.5, 3.8, 3.6, 3.4, 3.3, 3.5, 3.2, 3.0, 3.3, 3.1, 2.9, 3.0, 2.8, 2.7, 2.9, 2.6, 2.8, 2.5, 2.7, 2.4, 2.6, 2.3, 2.5, 2.4]
-    }
-}
-
-// MARK: - Private Models
-
-private struct ChartPoint: Identifiable {
-    let id: Int
-    let value: Double
 }

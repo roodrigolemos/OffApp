@@ -9,7 +9,7 @@ import FamilyControls
 import ManagedSettings
 
 private struct ScreenTimeShieldingPlanConfig: Codable {
-    var phoneRestrictionMethodRaw: String
+    var phoneRestrictionModeRaw: String
     var timeBoundaryRaw: String
     var daysRaw: Int
     var startHour: Int?
@@ -57,7 +57,7 @@ private extension ShieldMonitorExtension {
         do {
             guard
                 let config = try sharedStore.loadPlanConfig(),
-                config.phoneRestrictionMethodRaw == "screenTime"
+                config.phoneRestrictionModeRaw == "screenTime"
             else {
                 clearShielding()
                 return

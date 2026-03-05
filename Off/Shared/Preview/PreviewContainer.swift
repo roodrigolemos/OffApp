@@ -12,6 +12,7 @@ struct PreviewContainer {
     static let onboardingManager = OnboardingManager()
     static let bootstrapManager = BootstrapManager()
     static let statsManager = StatsManager()
+    static let usageManager = UsageManager()
     static let attributeManager = AttributeManager(store: MockAttributeStore())
     static let planManager = PlanManager(store: MockPlanStore())
     static let checkInManager = CheckInManager(store: MockCheckInStore())
@@ -27,7 +28,8 @@ struct PreviewContainer {
             insightManager: insightManager,
             urgeManager: urgeManager,
             statsManager: statsManager,
-            screenTimeManager: screenTimeManager
+            screenTimeManager: screenTimeManager,
+            usageManager: usageManager
         )
     }
 }
@@ -44,6 +46,7 @@ extension View {
             .environment(PreviewContainer.urgeManager)
             .environment(PreviewContainer.insightManager)
             .environment(PreviewContainer.statsManager)
+            .environment(PreviewContainer.usageManager)
             .environment(PreviewContainer.screenTimeManager)
             .environment(PreviewContainer.bootstrapManager)
             .task { PreviewContainer.bootstrap() }

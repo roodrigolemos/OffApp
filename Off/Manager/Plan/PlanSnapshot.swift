@@ -13,7 +13,7 @@ struct PlanSnapshot: Equatable {
     let timeBoundary: TimeBoundary
     let timeWindows: [TimeWindowValue]
     let days: DaysOfWeek
-    let phoneRestrictionMethod: PhoneRestrictionMethod
+    let phoneRestrictionMode: PhoneRestrictionMode
     let lightSupports: Set<LightSupport>
 
     // Full initializer
@@ -24,7 +24,7 @@ struct PlanSnapshot: Equatable {
         timeBoundary: TimeBoundary,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
-        phoneRestrictionMethod: PhoneRestrictionMethod,
+        phoneRestrictionMode: PhoneRestrictionMode,
         lightSupports: Set<LightSupport>
     ) {
         let normalizedWindows = PlanTimeWindowRules.normalized(timeBoundary: timeBoundary, timeWindows: timeWindows)
@@ -34,8 +34,8 @@ struct PlanSnapshot: Equatable {
         self.timeBoundary = timeBoundary
         self.timeWindows = normalizedWindows
         self.days = days
-        self.phoneRestrictionMethod = phoneRestrictionMethod
-        self.lightSupports = phoneRestrictionMethod.normalized(lightSupports: lightSupports)
+        self.phoneRestrictionMode = phoneRestrictionMode
+        self.lightSupports = phoneRestrictionMode.normalized(lightSupports: lightSupports)
     }
 
     var displayName: String {

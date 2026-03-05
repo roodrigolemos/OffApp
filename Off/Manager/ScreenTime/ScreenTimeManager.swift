@@ -132,7 +132,7 @@ final class ScreenTimeManager {
             }
 
             let canApplyShielding =
-                activePlan.phoneRestrictionMethod == .screenTime
+                activePlan.phoneRestrictionMode == .screenTime
                 && authorizationStatus == .approved
                 && hasSelectedActivity
 
@@ -157,6 +157,17 @@ final class ScreenTimeManager {
         || !activitySelection.webDomainTokens.isEmpty
     }
 
+    var isAuthorized: Bool {
+        authorizationStatus == .approved
+    }
+
+    var usageTrackingState: UsageTrackingState {
+        UsageTrackingState(
+            isAuthorized: isAuthorized,
+            hasSelection: hasSelectedActivity
+        )
+    }
+
     var selectionDigest: Int {
         var hasher = Hasher()
         hasher.combine(activitySelection.applicationTokens)
@@ -172,7 +183,7 @@ private extension ScreenTimeManager {
         guard let plan else { return nil }
         let window = plan.timeWindows.first
         return ScreenTimeShieldingPlanConfig(
-            phoneRestrictionMethodRaw: plan.phoneRestrictionMethod.rawValue,
+            phoneRestrictionModeRaw: plan.phoneRestrictionMode.rawValue,
             timeBoundaryRaw: plan.timeBoundary.rawValue,
             daysRaw: plan.days.rawValue,
             startHour: window?.startHour,

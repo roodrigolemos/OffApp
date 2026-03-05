@@ -887,7 +887,7 @@ private extension HomeView {
     }
 
     func planCardActionsText(for plan: PlanSnapshot) -> String? {
-        if plan.phoneRestrictionMethod == .deleteApps {
+        if plan.phoneRestrictionMode == .deleteApps {
             return "Delete"
         }
 

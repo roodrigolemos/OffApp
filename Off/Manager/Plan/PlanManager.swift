@@ -50,7 +50,7 @@ final class PlanManager {
         timeBoundary: TimeBoundary,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
-        phoneRestrictionMethod: PhoneRestrictionMethod,
+        phoneRestrictionMode: PhoneRestrictionMode,
         lightSupports: Set<LightSupport>
     ) {
         guard validate(name: name, days: days) else { return }
@@ -65,8 +65,8 @@ final class PlanManager {
                 timeBoundary: timeBoundary,
                 timeWindows: normalizedWindows,
                 days: days,
-                phoneRestrictionMethod: phoneRestrictionMethod,
-                lightSupports: phoneRestrictionMethod.normalized(lightSupports: lightSupports)
+                phoneRestrictionMode: phoneRestrictionMode,
+                lightSupports: phoneRestrictionMode.normalized(lightSupports: lightSupports)
             )
             try store.save(snapshot)
             loadPlan()
@@ -80,7 +80,7 @@ final class PlanManager {
         timeBoundary: TimeBoundary,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
-        phoneRestrictionMethod: PhoneRestrictionMethod,
+        phoneRestrictionMode: PhoneRestrictionMode,
         lightSupports: Set<LightSupport>
     ) {
         guard let activePlan else {
@@ -101,8 +101,8 @@ final class PlanManager {
                 timeBoundary: timeBoundary,
                 timeWindows: normalizedWindows,
                 days: days,
-                phoneRestrictionMethod: phoneRestrictionMethod,
-                lightSupports: phoneRestrictionMethod.normalized(lightSupports: lightSupports)
+                phoneRestrictionMode: phoneRestrictionMode,
+                lightSupports: phoneRestrictionMode.normalized(lightSupports: lightSupports)
             )
             try store.save(snapshot)
             loadPlan()

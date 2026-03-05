@@ -17,7 +17,8 @@ final class BootstrapManager {
         insightManager: InsightManager,
         urgeManager: UrgeManager,
         statsManager: StatsManager,
-        screenTimeManager: ScreenTimeManager
+        screenTimeManager: ScreenTimeManager,
+        usageManager: UsageManager
     ) {
         planManager.loadPlan()
         attributeManager.loadScores()
@@ -33,6 +34,10 @@ final class BootstrapManager {
             planHistory: planManager.planHistory,
             interventions: urgeManager.interventions
         )
+        usageManager.recalculate(
+            activePlan: planManager.activePlan,
+            trackingState: screenTimeManager.usageTrackingState
+        )
     }
 
     func refresh(
@@ -42,7 +47,8 @@ final class BootstrapManager {
         insightManager: InsightManager,
         urgeManager: UrgeManager,
         statsManager: StatsManager,
-        screenTimeManager: ScreenTimeManager
+        screenTimeManager: ScreenTimeManager,
+        usageManager: UsageManager
     ) {
         planManager.loadPlan()
         checkInManager.loadCheckIns()
@@ -56,6 +62,10 @@ final class BootstrapManager {
             activePlan: planManager.activePlan,
             planHistory: planManager.planHistory,
             interventions: urgeManager.interventions
+        )
+        usageManager.recalculate(
+            activePlan: planManager.activePlan,
+            trackingState: screenTimeManager.usageTrackingState
         )
     }
 }
