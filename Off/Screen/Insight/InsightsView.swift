@@ -1,5 +1,5 @@
 //
-//  ProgresssView.swift
+//  InsightsView.swift
 //  Off
 //
 //  Created by Rodrigo Lemos on 11/02/26.
@@ -7,21 +7,14 @@
 
 import SwiftUI
 import Charts
-import FamilyControls
 
-struct ProgresssView: View {
+struct InsightsView: View {
 
     @Environment(AttributeManager.self) var attributeManager
-    @Environment(PlanManager.self) var planManager
-    @Environment(ScreenTimeManager.self) var screenTimeManager
     @Environment(StatsManager.self) var statsManager
-    @Environment(UsageManager.self) var usageManager
 
     @State private var showArchive: Bool = false
     @State private var selectedMonthIndex: Int = 0
-    @State private var showActivityPicker: Bool = false
-    @State private var showUsageReport: Bool = false
-    @State private var activitySelection: FamilyActivitySelection = FamilyActivitySelection()
 
     var body: some View {
         NavigationStack {
@@ -34,7 +27,6 @@ struct ProgresssView: View {
                         attributeTrendsSection
                         planAdherenceSection
                         urgePatternSection
-                        usageDataSection
                         weeklyFeedbackSection
                         checkInHistorySection
                     }
@@ -42,58 +34,21 @@ struct ProgresssView: View {
                 }
                 .scrollIndicators(.hidden)
             }
-            .navigationDestination(isPresented: $showUsageReport) {
-                UsageReportView()
-            }
-            .familyActivityPicker(
-                isPresented: $showActivityPicker,
-                selection: $activitySelection
-            )
-            .onChange(of: activitySelection) {
-                screenTimeManager.updateSelection(activitySelection)
-                recalculateUsageState()
-            }
-            .onChange(of: screenTimeManager.authorizationStatus) {
-                recalculateUsageState()
-            }
-            .onChange(of: screenTimeManager.selectionDigest) {
-                recalculateUsageState()
-            }
-            .onChange(of: planManager.activePlan) {
-                recalculateUsageState()
-            }
-            .onAppear {
-                activitySelection = screenTimeManager.activitySelection
-                recalculateUsageState()
-            }
-            .alert(
-                "Error",
-                isPresented: .init(
-                    get: { screenTimeManager.error != nil },
-                    set: { if !$0 { screenTimeManager.error = nil } }
-                ),
-                actions: {
-                    Button("OK") { screenTimeManager.error = nil }
-                },
-                message: {
-                    Text(screenTimeManager.error?.localizedDescription ?? "")
-                }
-            )
         }
     }
 }
 
 #Preview {
-    ProgresssView()
+    InsightsView()
         .withPreviewManagers()
 }
 
 // MARK: - Sections
 
-private extension ProgresssView {
+private extension InsightsView {
 
     var headerSection: some View {
-        Text("Progress")
+        Text("Insights")
             .font(.system(size: 38, weight: .heavy))
             .foregroundStyle(Color.offTextPrimary)
             .tracking(-0.5)
@@ -172,67 +127,11 @@ private extension ProgresssView {
         .padding(.bottom, 36)
     }
 
-    var usageDataSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("USAGE DATA")
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(Color.offTextMuted)
-                .tracking(1.6)
-
-            switch usageManager.snapshot.state {
-            case .lockedTracking:
-                UsageLockedTrackingCardView {
-                    Task {
-                        await screenTimeManager.requestAuthorization()
-                        openSelectionPicker()
-                    }
-                }
-            case .requiredScreenTimePermission:
-                UsageRequiredSetupCardView(
-                    title: "Screen Time required",
-                    bodyText: "This plan needs Screen Time access to block apps and show usage.",
-                    ctaTitle: "Enable Screen Time"
-                ) {
-                    Task {
-                        await screenTimeManager.requestAuthorization()
-                    }
-                }
-            case .requiredSelection:
-                UsageRequiredSetupCardView(
-                    title: "Choose apps",
-                    bodyText: "Select the apps Off should block and track.",
-                    ctaTitle: "Select apps"
-                ) {
-                    openSelectionPicker()
-                }
-            case .usageEnabled:
-                UsageOpenReportCardView {
-                    showUsageReport = true
-                }
-            case .removalImpact(let daysSinceRemoval):
-                UsageRemovalImpactCardView(daysSinceRemoval: daysSinceRemoval)
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 32)
-    }
 }
 
 // MARK: - Helper Views
 
-private extension ProgresssView {
-
-    func openSelectionPicker() {
-        activitySelection = screenTimeManager.activitySelection
-        showActivityPicker = true
-    }
-
-    func recalculateUsageState() {
-        usageManager.recalculate(
-            activePlan: planManager.activePlan,
-            trackingState: screenTimeManager.usageTrackingState
-        )
-    }
+private extension InsightsView {
 
     var trendChartsGrid: some View {
         let scores = attributeManager.scores
@@ -872,7 +771,7 @@ private extension ProgresssView {
 
 // MARK: - Helpers
 
-private extension ProgresssView {
+private extension InsightsView {
 
     func scoreDots(score: Double) -> some View {
         let normalized = max(1.0, min(5.0, score))

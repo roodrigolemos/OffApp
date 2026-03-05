@@ -61,55 +61,71 @@ private extension UsageReportManager {
         let sevenDayDates = Array(thirtyDayDates.suffix(7))
         let previousSevenDayDates = Array(thirtyDayDates.dropLast(7).suffix(7))
 
-        let todayDurations = raw.dailyAppDurations[today] ?? [:]
-        let topAppToday = todayDurations.max(by: { $0.value < $1.value })?.key
-
-        let todaySnapshot = UsageTodaySnapshot(
-            totalDurationSeconds: raw.dailyDurations[today, default: 0],
-            checksCount: raw.hasApplicationUsage ? raw.dailyChecks[today, default: 0] : nil,
-            topAppName: topAppToday
-        )
-
-        let topApps = topApps(for: sevenDayDates, dailyAppDurations: raw.dailyAppDurations)
+        let todayTotal = raw.dailyDurations[today, default: 0]
         let sevenDayTotal = totalDuration(for: sevenDayDates, dailyDurations: raw.dailyDurations)
         let sevenDayAverage = sevenDayTotal / 7.0
-        let peakDay = peakDayInfo(for: sevenDayDates, dailyDurations: raw.dailyDurations)
+        let thirtyDayTotal = totalDuration(for: thirtyDayDates, dailyDurations: raw.dailyDurations)
+        let thirtyDayAverage = thirtyDayTotal / 30.0
+        let previousSevenTotal = totalDuration(for: previousSevenDayDates, dailyDurations: raw.dailyDurations)
 
-        let lastSevenSnapshot = UsageLastSevenDaysSnapshot(
-            topApps: topApps,
-            averagePerDaySeconds: sevenDayAverage,
-            totalChecksCount: raw.hasApplicationUsage ? totalChecks(for: sevenDayDates, dailyChecks: raw.dailyChecks) : nil,
-            peakDayLabel: peakDay?.label,
-            peakDayDurationSeconds: peakDay?.duration
+        let topAppToday = raw.dailyAppDurations[today]?.max(by: { $0.value < $1.value })?.key
+        let todayDelta = sevenDayAverage > 0 ? (todayTotal - sevenDayAverage) / sevenDayAverage : nil
+        let sevenVersusPrevious = previousSevenTotal > 0
+            ? (sevenDayTotal - previousSevenTotal) / previousSevenTotal
+            : nil
+
+        let hero = UsageHeroSnapshot(
+            todayTotalDurationSeconds: todayTotal,
+            todayChecksCount: raw.hasApplicationUsage ? raw.dailyChecks[today, default: 0] : nil,
+            todayTopAppName: topAppToday,
+            todayVersusSevenDayAverageDelta: todayDelta
         )
 
-        let dayTotals = thirtyDayDates.map { date in
-            UsageDayTotalSnapshot(
-                id: date,
-                date: date,
-                totalDurationSeconds: raw.dailyDurations[date, default: 0]
+        let sevenDayTotals = dayTotals(for: sevenDayDates, dailyDurations: raw.dailyDurations)
+        let thirtyDayTotals = dayTotals(for: thirtyDayDates, dailyDurations: raw.dailyDurations)
+        let hasAnyTrackedUsage = (sevenDayTotals + thirtyDayTotals).contains { $0.totalDurationSeconds > 0 }
+
+        let trend = UsageTrendSnapshot(
+            sevenDayTotals: sevenDayTotals,
+            thirtyDayTotals: thirtyDayTotals,
+            sevenVersusPreviousSevenDelta: sevenVersusPrevious,
+            thirtyDayAverageSeconds: thirtyDayAverage,
+            hasAnyTrackedUsage: hasAnyTrackedUsage
+        )
+
+        let signals = UsageSignalsSnapshot(
+            sevenDay: periodSignals(
+                for: sevenDayDates,
+                dailyDurations: raw.dailyDurations,
+                dailyChecks: raw.dailyChecks,
+                hasApplicationUsage: raw.hasApplicationUsage
+            ),
+            thirtyDay: periodSignals(
+                for: thirtyDayDates,
+                dailyDurations: raw.dailyDurations,
+                dailyChecks: raw.dailyChecks,
+                hasApplicationUsage: raw.hasApplicationUsage
             )
-        }
+        )
 
-        let previousSevenTotal = totalDuration(for: previousSevenDayDates, dailyDurations: raw.dailyDurations)
-        let contextLine: String
-        if previousSevenTotal > 0 {
-            let delta = (sevenDayTotal - previousSevenTotal) / previousSevenTotal
-            contextLine = "Last 7 vs previous 7: \(UsageFormatters.percentDeltaText(from: delta))"
-        } else {
-            let averageThirty = dayTotals.reduce(0) { $0 + $1.totalDurationSeconds } / 30.0
-            contextLine = "30-day average: \(UsageFormatters.durationText(from: averageThirty))"
-        }
-
-        let lastThirtySnapshot = UsageLastThirtyDaysSnapshot(
-            dayTotals: dayTotals,
-            contextLine: contextLine
+        let breakdown = UsageBreakdownSnapshot(
+            sevenDayApps: appBreakdown(
+                for: sevenDayDates,
+                dailyAppDurations: raw.dailyAppDurations,
+                dailyDurations: raw.dailyDurations
+            ),
+            thirtyDayApps: appBreakdown(
+                for: thirtyDayDates,
+                dailyAppDurations: raw.dailyAppDurations,
+                dailyDurations: raw.dailyDurations
+            )
         )
 
         return UsageReportConfiguration(
-            today: todaySnapshot,
-            lastSevenDays: lastSevenSnapshot,
-            lastThirtyDays: lastThirtySnapshot
+            hero: hero,
+            trend: trend,
+            signals: signals,
+            breakdown: breakdown
         )
     }
 
@@ -121,11 +137,13 @@ private extension UsageReportManager {
         }
     }
 
-    func topApps(
+    func appBreakdown(
         for days: [Date],
-        dailyAppDurations: [Date: [String: TimeInterval]]
-    ) -> [UsageAppUsageSnapshot] {
+        dailyAppDurations: [Date: [String: TimeInterval]],
+        dailyDurations: [Date: TimeInterval]
+    ) -> [UsageAppBreakdownSnapshot] {
         var totals: [String: TimeInterval] = [:]
+        let totalDurationInPeriod = totalDuration(for: days, dailyDurations: dailyDurations)
 
         for day in days {
             for (name, duration) in dailyAppDurations[day] ?? [:] {
@@ -135,10 +153,48 @@ private extension UsageReportManager {
 
         return totals
             .sorted { lhs, rhs in lhs.value > rhs.value }
-            .prefix(5)
+            .prefix(10)
             .map { item in
-                UsageAppUsageSnapshot(id: item.key, name: item.key, totalDurationSeconds: item.value)
+                UsageAppBreakdownSnapshot(
+                    id: item.key,
+                    name: item.key,
+                    totalDurationSeconds: item.value,
+                    share: totalDurationInPeriod > 0 ? item.value / totalDurationInPeriod : 0
+                )
             }
+    }
+
+    func dayTotals(
+        for days: [Date],
+        dailyDurations: [Date: TimeInterval]
+    ) -> [UsageDayTotalSnapshot] {
+        days.map { day in
+            UsageDayTotalSnapshot(
+                id: day,
+                date: day,
+                totalDurationSeconds: dailyDurations[day, default: 0]
+            )
+        }
+    }
+
+    func periodSignals(
+        for days: [Date],
+        dailyDurations: [Date: TimeInterval],
+        dailyChecks: [Date: Int],
+        hasApplicationUsage: Bool
+    ) -> UsagePeriodSignalsSnapshot {
+        let total = totalDuration(for: days, dailyDurations: dailyDurations)
+        let average = days.isEmpty ? 0 : total / Double(days.count)
+        let activeDays = days.filter { dailyDurations[$0, default: 0] > 0 }.count
+        let peak = peakDayInfo(for: days, dailyDurations: dailyDurations)
+
+        return UsagePeriodSignalsSnapshot(
+            averagePerDaySeconds: average,
+            activeDayCount: activeDays,
+            peakDayLabel: peak?.label,
+            peakDayDurationSeconds: peak?.duration,
+            totalChecksCount: hasApplicationUsage ? totalChecks(for: days, dailyChecks: dailyChecks) : nil
+        )
     }
 
     func totalDuration(for days: [Date], dailyDurations: [Date: TimeInterval]) -> TimeInterval {

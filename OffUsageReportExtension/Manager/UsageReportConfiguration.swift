@@ -6,34 +6,50 @@
 import Foundation
 
 struct UsageReportConfiguration {
-    let today: UsageTodaySnapshot
-    let lastSevenDays: UsageLastSevenDaysSnapshot
-    let lastThirtyDays: UsageLastThirtyDaysSnapshot
+    let hero: UsageHeroSnapshot
+    let trend: UsageTrendSnapshot
+    let signals: UsageSignalsSnapshot
+    let breakdown: UsageBreakdownSnapshot
 }
 
-struct UsageTodaySnapshot {
-    let totalDurationSeconds: TimeInterval
-    let checksCount: Int?
-    let topAppName: String?
+struct UsageHeroSnapshot {
+    let todayTotalDurationSeconds: TimeInterval
+    let todayChecksCount: Int?
+    let todayTopAppName: String?
+    let todayVersusSevenDayAverageDelta: Double?
 }
 
-struct UsageLastSevenDaysSnapshot {
-    let topApps: [UsageAppUsageSnapshot]
+struct UsageTrendSnapshot {
+    let sevenDayTotals: [UsageDayTotalSnapshot]
+    let thirtyDayTotals: [UsageDayTotalSnapshot]
+    let sevenVersusPreviousSevenDelta: Double?
+    let thirtyDayAverageSeconds: TimeInterval
+    let hasAnyTrackedUsage: Bool
+}
+
+struct UsageSignalsSnapshot {
+    let sevenDay: UsagePeriodSignalsSnapshot
+    let thirtyDay: UsagePeriodSignalsSnapshot
+}
+
+struct UsagePeriodSignalsSnapshot {
     let averagePerDaySeconds: TimeInterval
-    let totalChecksCount: Int?
+    let activeDayCount: Int
     let peakDayLabel: String?
     let peakDayDurationSeconds: TimeInterval?
+    let totalChecksCount: Int?
 }
 
-struct UsageLastThirtyDaysSnapshot {
-    let dayTotals: [UsageDayTotalSnapshot]
-    let contextLine: String
+struct UsageBreakdownSnapshot {
+    let sevenDayApps: [UsageAppBreakdownSnapshot]
+    let thirtyDayApps: [UsageAppBreakdownSnapshot]
 }
 
-struct UsageAppUsageSnapshot: Identifiable {
+struct UsageAppBreakdownSnapshot: Identifiable {
     let id: String
     let name: String
     let totalDurationSeconds: TimeInterval
+    let share: Double
 }
 
 struct UsageDayTotalSnapshot: Identifiable {
@@ -44,14 +60,38 @@ struct UsageDayTotalSnapshot: Identifiable {
 
 extension UsageReportConfiguration {
     static let empty = UsageReportConfiguration(
-        today: UsageTodaySnapshot(totalDurationSeconds: 0, checksCount: nil, topAppName: nil),
-        lastSevenDays: UsageLastSevenDaysSnapshot(
-            topApps: [],
-            averagePerDaySeconds: 0,
-            totalChecksCount: nil,
-            peakDayLabel: nil,
-            peakDayDurationSeconds: nil
+        hero: UsageHeroSnapshot(
+            todayTotalDurationSeconds: 0,
+            todayChecksCount: nil,
+            todayTopAppName: nil,
+            todayVersusSevenDayAverageDelta: nil
         ),
-        lastThirtyDays: UsageLastThirtyDaysSnapshot(dayTotals: [], contextLine: "30-day average: 0m")
+        trend: UsageTrendSnapshot(
+            sevenDayTotals: [],
+            thirtyDayTotals: [],
+            sevenVersusPreviousSevenDelta: nil,
+            thirtyDayAverageSeconds: 0,
+            hasAnyTrackedUsage: false
+        ),
+        signals: UsageSignalsSnapshot(
+            sevenDay: UsagePeriodSignalsSnapshot(
+                averagePerDaySeconds: 0,
+                activeDayCount: 0,
+                peakDayLabel: nil,
+                peakDayDurationSeconds: nil,
+                totalChecksCount: nil
+            ),
+            thirtyDay: UsagePeriodSignalsSnapshot(
+                averagePerDaySeconds: 0,
+                activeDayCount: 0,
+                peakDayLabel: nil,
+                peakDayDurationSeconds: nil,
+                totalChecksCount: nil
+            )
+        ),
+        breakdown: UsageBreakdownSnapshot(
+            sevenDayApps: [],
+            thirtyDayApps: []
+        )
     )
 }

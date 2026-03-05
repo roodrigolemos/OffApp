@@ -214,7 +214,7 @@ private extension HomeView {
                             .fill(Color.offAccent.opacity(0.15))
                             .frame(width: 78, height: 78)
 
-                        Image(systemName: "sparkles")
+                        Image(systemName: "brain.head.profile")
                             .font(.system(size: 20, weight: .bold))
                             .foregroundStyle(.white)
                     }

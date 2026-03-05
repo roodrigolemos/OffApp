@@ -34,24 +34,34 @@ final class DeviceActivityUsageReportStore: UsageReportStore {
         for await deviceData in data {
             for await segment in deviceData.activitySegments {
                 let day = calendar.startOfDay(for: segment.dateInterval.start)
-                var dayDuration: TimeInterval = 0
-                var dayChecks: Int = 0
                 var dayBreakdown = dailyAppDurations[day, default: [:]]
+                var segmentApplicationDuration: TimeInterval = 0
+                var segmentApplicationChecks: Int = 0
+                var segmentCategoryDuration: TimeInterval = 0
+                var hasApplicationRowsInSegment = false
 
                 for await category in segment.categories {
+                    segmentCategoryDuration += category.totalActivityDuration
+
                     for await application in category.applications {
                         hasApplicationUsage = true
+                        hasApplicationRowsInSegment = true
 
                         let appName = appLabel(for: application.application)
                         let appDuration = application.totalActivityDuration
-                        dayDuration += appDuration
-                        dayChecks += application.numberOfPickups
+                        segmentApplicationDuration += appDuration
+                        segmentApplicationChecks += application.numberOfPickups
                         dayBreakdown[appName, default: 0] += appDuration
                     }
                 }
 
-                dailyDurations[day, default: 0] += dayDuration
-                dailyChecks[day, default: 0] += dayChecks
+                if hasApplicationRowsInSegment {
+                    dailyDurations[day, default: 0] += segmentApplicationDuration
+                    dailyChecks[day, default: 0] += segmentApplicationChecks
+                } else {
+                    dailyDurations[day, default: 0] += segmentCategoryDuration
+                }
+
                 if !dayBreakdown.isEmpty {
                     dailyAppDurations[day] = dayBreakdown
                 }

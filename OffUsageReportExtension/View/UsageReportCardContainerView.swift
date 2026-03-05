@@ -11,16 +11,23 @@ struct UsageReportCardContainerView<Content: View>: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .fill(Color.white)
 
             content
-                .padding(18)
+                .padding(22)
         }
         .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(
+                    Color(
+                        red: 230.0 / 255.0,
+                        green: 225.0 / 255.0,
+                        blue: 217.0 / 255.0
+                    ),
+                    lineWidth: 1
+                )
         )
-        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
+        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
     }
 }
