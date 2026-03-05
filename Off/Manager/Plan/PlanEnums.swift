@@ -14,31 +14,6 @@ enum PlanVisuals {
     static let defaultIcon = "target"
 }
 
-enum PhoneRestrictionMode: String, Codable, CaseIterable, Hashable {
-    case none
-    case screenTime
-    case deleteApps
-
-    var displayName: String {
-        switch self {
-        case .none: return "No restriction"
-        case .screenTime: return "iOS Screen Time shielding"
-        case .deleteApps: return "Delete apps from iPhone"
-        }
-    }
-
-    func normalized(lightSupports: Set<LightSupport>) -> Set<LightSupport> {
-        switch self {
-        case .none:
-            return lightSupports
-        case .screenTime:
-            return lightSupports.subtracting([.logOut])
-        case .deleteApps:
-            return []
-        }
-    }
-}
-
 enum LightSupport: String, Codable, CaseIterable, Hashable {
     case notificationsOff
     case removeFromHomeScreen

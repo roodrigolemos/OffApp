@@ -10,7 +10,6 @@ import Observation
 @Observable
 final class PlanManager {
 
-    private static let didResetPlansForRulesOnlyKey = "didResetPlansForRulesOnly"
     private let store: PlanStore
 
     var activePlan: PlanSnapshot?
@@ -36,7 +35,6 @@ final class PlanManager {
 
     func loadPlan() {
         do {
-            try runRulesOnlyMigrationIfNeeded()
             planHistory = try store.fetchAllPlans()
             activePlan = planHistory.last
             error = nil
@@ -50,7 +48,6 @@ final class PlanManager {
         timeBoundary: TimeBoundary,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
-        phoneRestrictionMode: PhoneRestrictionMode,
         lightSupports: Set<LightSupport>
     ) {
         guard validate(name: name, days: days) else { return }
@@ -65,8 +62,7 @@ final class PlanManager {
                 timeBoundary: timeBoundary,
                 timeWindows: normalizedWindows,
                 days: days,
-                phoneRestrictionMode: phoneRestrictionMode,
-                lightSupports: phoneRestrictionMode.normalized(lightSupports: lightSupports)
+                lightSupports: lightSupports
             )
             try store.save(snapshot)
             loadPlan()
@@ -80,7 +76,6 @@ final class PlanManager {
         timeBoundary: TimeBoundary,
         timeWindows: [TimeWindowValue],
         days: DaysOfWeek,
-        phoneRestrictionMode: PhoneRestrictionMode,
         lightSupports: Set<LightSupport>
     ) {
         guard let activePlan else {
@@ -101,8 +96,7 @@ final class PlanManager {
                 timeBoundary: timeBoundary,
                 timeWindows: normalizedWindows,
                 days: days,
-                phoneRestrictionMode: phoneRestrictionMode,
-                lightSupports: phoneRestrictionMode.normalized(lightSupports: lightSupports)
+                lightSupports: lightSupports
             )
             try store.save(snapshot)
             loadPlan()
@@ -122,12 +116,5 @@ final class PlanManager {
             return false
         }
         return true
-    }
-
-    private func runRulesOnlyMigrationIfNeeded() throws {
-        let defaults = UserDefaults.standard
-        guard !defaults.bool(forKey: Self.didResetPlansForRulesOnlyKey) else { return }
-        try store.deleteAllPlans()
-        defaults.set(true, forKey: Self.didResetPlansForRulesOnlyKey)
     }
 }

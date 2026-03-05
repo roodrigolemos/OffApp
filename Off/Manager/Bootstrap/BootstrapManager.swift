@@ -35,7 +35,6 @@ final class BootstrapManager {
             interventions: urgeManager.interventions
         )
         usageManager.recalculate(
-            activePlan: planManager.activePlan,
             trackingState: screenTimeManager.usageTrackingState
         )
     }
@@ -64,7 +63,6 @@ final class BootstrapManager {
             interventions: urgeManager.interventions
         )
         usageManager.recalculate(
-            activePlan: planManager.activePlan,
             trackingState: screenTimeManager.usageTrackingState
         )
     }

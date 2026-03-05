@@ -90,7 +90,6 @@ struct OnboardingView: View {
             timeBoundary: onboardingManager.timeBoundary,
             timeWindows: windows,
             days: onboardingManager.days,
-            phoneRestrictionMode: onboardingManager.phoneRestrictionMode,
             lightSupports: onboardingManager.lightSupports
         )
 

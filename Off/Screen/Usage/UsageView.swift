@@ -86,19 +86,10 @@ private extension UsageView {
     @ViewBuilder
     var setupContentSection: some View {
         switch usageManager.snapshot.state {
-        case .lockedTracking:
-            UsageLockedTrackingCardView {
-                Task {
-                    if screenTimeManager.authorizationStatus != .approved {
-                        await screenTimeManager.requestAuthorization()
-                    }
-                    openSelectionPicker()
-                }
-            }
         case .requiredScreenTimePermission:
             UsageRequiredSetupCardView(
                 title: "Screen Time required",
-                bodyText: "This plan needs Screen Time access to block apps and show usage.",
+                bodyText: "Off needs Screen Time access to block apps and show usage.",
                 ctaTitle: "Enable Screen Time"
             ) {
                 Task {
@@ -113,8 +104,6 @@ private extension UsageView {
             ) {
                 openSelectionPicker()
             }
-        case .removalImpact(let daysSinceRemoval):
-            UsageRemovalImpactCardView(daysSinceRemoval: daysSinceRemoval)
         case .usageEnabled:
             EmptyView()
         }

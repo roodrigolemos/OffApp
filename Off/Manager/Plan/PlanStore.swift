@@ -11,7 +11,6 @@ protocol PlanStore {
     func fetchActivePlan() throws -> PlanSnapshot?
     func fetchAllPlans() throws -> [PlanSnapshot]
     func save(_ snapshot: PlanSnapshot) throws
-    func deleteAllPlans() throws
 }
 
 @MainActor
@@ -42,13 +41,6 @@ final class SwiftDataPlanStore: PlanStore {
     func save(_ snapshot: PlanSnapshot) throws {
         let model = Plan(from: snapshot)
         context.insert(model)
-        try context.save()
-    }
-
-    func deleteAllPlans() throws {
-        let descriptor = FetchDescriptor<Plan>()
-        let models = try context.fetch(descriptor)
-        models.forEach { context.delete($0) }
         try context.save()
     }
 }

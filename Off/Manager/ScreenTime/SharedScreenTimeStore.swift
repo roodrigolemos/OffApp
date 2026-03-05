@@ -7,7 +7,6 @@ import Foundation
 import FamilyControls
 
 struct ScreenTimeShieldingPlanConfig: Codable {
-    var phoneRestrictionModeRaw: String
     var timeBoundaryRaw: String
     var daysRaw: Int
     var startHour: Int?

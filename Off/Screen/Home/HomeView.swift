@@ -887,10 +887,6 @@ private extension HomeView {
     }
 
     func planCardActionsText(for plan: PlanSnapshot) -> String? {
-        if plan.phoneRestrictionMode == .deleteApps {
-            return "Delete"
-        }
-
         var actions: [String] = []
         if plan.lightSupports.contains(.removeFromHomeScreen) { actions.append("Hide") }
         if plan.lightSupports.contains(.notificationsOff) { actions.append("Mute") }

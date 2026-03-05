@@ -144,21 +144,18 @@ struct OffApp: App {
                 .onChange(of: planManager.activePlan) { _, _ in
                     screenTimeManager.syncShielding(activePlan: planManager.activePlan)
                     usageManager.recalculate(
-                        activePlan: planManager.activePlan,
                         trackingState: screenTimeManager.usageTrackingState
                     )
                 }
                 .onChange(of: screenTimeManager.selectionDigest) { _, _ in
                     screenTimeManager.syncShielding(activePlan: planManager.activePlan)
                     usageManager.recalculate(
-                        activePlan: planManager.activePlan,
                         trackingState: screenTimeManager.usageTrackingState
                     )
                 }
                 .onChange(of: screenTimeManager.authorizationStatus) { _, _ in
                     screenTimeManager.syncShielding(activePlan: planManager.activePlan)
                     usageManager.recalculate(
-                        activePlan: planManager.activePlan,
                         trackingState: screenTimeManager.usageTrackingState
                     )
                 }

@@ -15,7 +15,6 @@ struct PlanRulesEditView: View {
     @State private var timeBoundary: TimeBoundary = .duringWindows
     @State private var timeWindows: [TimeWindowValue] = [PlanTimeWindowRules.defaultWindow]
     @State private var days: DaysOfWeek = .everyday
-    @State private var phoneRestrictionMode: PhoneRestrictionMode = .none
     @State private var lightSupports: Set<LightSupport> = []
     @State private var hasLoadedInitialState = false
 
@@ -26,10 +25,7 @@ struct PlanRulesEditView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 12) {
                     nameCard
-                    phoneRestrictionCard
-                    if shouldShowLightSupports {
-                        lightSupportsCard
-                    }
+                    lightSupportsCard
                     timeCard
                     daysCard
                     saveButton
@@ -49,14 +45,10 @@ struct PlanRulesEditView: View {
             timeWindows = activePlan.timeWindows
             normalizeTimeWindows()
             days = activePlan.days
-            phoneRestrictionMode = activePlan.phoneRestrictionMode
             lightSupports = activePlan.lightSupports
         }
         .onChange(of: timeBoundary) {
             normalizeTimeWindows()
-        }
-        .onChange(of: phoneRestrictionMode) {
-            lightSupports = phoneRestrictionMode.normalized(lightSupports: lightSupports)
         }
         .alert(
             "Error",
@@ -131,55 +123,8 @@ private extension PlanRulesEditView {
         .modifier(PlanRulesCardStyle())
     }
 
-    var shouldShowLightSupports: Bool {
-        phoneRestrictionMode != .deleteApps
-    }
-
     var availableLightSupports: [LightSupport] {
-        switch phoneRestrictionMode {
-        case .none:
-            return [.notificationsOff, .removeFromHomeScreen, .logOut]
-        case .screenTime:
-            return [.notificationsOff, .removeFromHomeScreen]
-        case .deleteApps:
-            return []
-        }
-    }
-
-    var phoneRestrictionCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            cardHeader(icon: "iphone", title: "Phone Restriction", subtitle: "Pick one core method")
-
-            VStack(spacing: 10) {
-                restrictionOption(
-                    icon: "sparkles",
-                    label: "No restriction",
-                    description: "Use lighter supports without hard phone blocks",
-                    selected: phoneRestrictionMode == .none
-                ) {
-                    phoneRestrictionMode = .none
-                }
-
-                restrictionOption(
-                    icon: "shield.fill",
-                    label: "iOS Screen Time Shielding",
-                    description: "Rely on scheduled shield restrictions",
-                    selected: phoneRestrictionMode == .screenTime
-                ) {
-                    phoneRestrictionMode = .screenTime
-                }
-
-                restrictionOption(
-                    icon: "trash.fill",
-                    label: "Delete apps from iPhone",
-                    description: "Remove social apps from your phone",
-                    selected: phoneRestrictionMode == .deleteApps
-                ) {
-                    phoneRestrictionMode = .deleteApps
-                }
-            }
-        }
-        .modifier(PlanRulesCardStyle())
+        [.notificationsOff, .removeFromHomeScreen, .logOut]
     }
 
     var lightSupportsCard: some View {
@@ -358,46 +303,6 @@ private extension PlanRulesEditView {
         .buttonStyle(.plain)
     }
 
-    func restrictionOption(icon: String, label: String, description: String, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button {
-            action()
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(selected ? Color.offAccent : Color.offTextSecondary)
-                    .frame(width: 24)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(label)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color.offTextPrimary)
-
-                    Text(description)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color.offTextSecondary)
-                }
-
-                Spacer()
-
-                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(selected ? Color.offAccent : Color.offDotInactive)
-            }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 14)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(selected ? Color.offAccent.opacity(0.08) : Color.offBackgroundPrimary)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(selected ? Color.offAccent : Color.offStroke, lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
     func lightSupportOption(icon: String, label: String, description: String, isOn: Binding<Bool>) -> some View {
         Button {
             isOn.wrappedValue.toggle()
@@ -496,7 +401,7 @@ private extension PlanRulesEditView {
         case .removeFromHomeScreen:
             return "Keep social apps out of your home screen"
         case .logOut:
-            return "Use extra friction with account sign-out"
+            return "Use extra friction by logging out of your accounts"
         }
     }
 
@@ -508,7 +413,6 @@ private extension PlanRulesEditView {
             timeBoundary: timeBoundary,
             timeWindows: windows,
             days: days,
-            phoneRestrictionMode: phoneRestrictionMode,
             lightSupports: lightSupports
         )
 

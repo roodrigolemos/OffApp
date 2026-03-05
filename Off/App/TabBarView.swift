@@ -10,8 +10,6 @@ import SwiftUI
 
 struct TabBarView: View {
 
-    @Environment(PlanManager.self) var planManager
-
     @State private var selectedTab: Tab = .home
 
     private enum Tab: Hashable {
@@ -33,13 +31,11 @@ struct TabBarView: View {
                 .tabItem {
                     Label("Insights", systemImage: "sparkles")
                 }
-            if shouldShowUsageTab {
-                UsageView()
-                    .tag(Tab.usage)
-                    .tabItem {
-                        Label("Usage", systemImage: "clock.fill")
-                    }
-            }
+            UsageView()
+                .tag(Tab.usage)
+                .tabItem {
+                    Label("Usage", systemImage: "clock.fill")
+                }
             SettingsView()
                 .tag(Tab.settings)
                 .tabItem {
@@ -47,28 +43,6 @@ struct TabBarView: View {
                 }
         }
         .tint(.offAccent)
-        .onAppear {
-            normalizeSelectedTabForCurrentMode()
-        }
-        .onChange(of: currentPhoneRestrictionMode) { _, _ in
-            normalizeSelectedTabForCurrentMode()
-        }
-    }
-}
-
-private extension TabBarView {
-
-    var currentPhoneRestrictionMode: PhoneRestrictionMode {
-        planManager.activePlan?.phoneRestrictionMode ?? .none
-    }
-
-    var shouldShowUsageTab: Bool {
-        currentPhoneRestrictionMode != .deleteApps
-    }
-
-    func normalizeSelectedTabForCurrentMode() {
-        guard currentPhoneRestrictionMode == .deleteApps, selectedTab == .usage else { return }
-        selectedTab = .home
     }
 }
 

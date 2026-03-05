@@ -132,8 +132,7 @@ final class ScreenTimeManager {
             }
 
             let canApplyShielding =
-                activePlan.phoneRestrictionMode == .screenTime
-                && authorizationStatus == .approved
+                authorizationStatus == .approved
                 && hasSelectedActivity
 
             guard canApplyShielding else {
@@ -183,7 +182,6 @@ private extension ScreenTimeManager {
         guard let plan else { return nil }
         let window = plan.timeWindows.first
         return ScreenTimeShieldingPlanConfig(
-            phoneRestrictionModeRaw: plan.phoneRestrictionMode.rawValue,
             timeBoundaryRaw: plan.timeBoundary.rawValue,
             daysRaw: plan.days.rawValue,
             startHour: window?.startHour,

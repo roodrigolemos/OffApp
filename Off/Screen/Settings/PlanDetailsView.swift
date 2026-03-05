@@ -30,7 +30,7 @@ struct PlanDetailsView: View {
                         headerSection(plan)
                         editActionsSection
                         scheduleSection(plan)
-                        phoneRestrictionSection(plan)
+                        screenTimeSection(plan)
                         appsSection
                     }
                     .padding(.horizontal, 24)
@@ -125,13 +125,13 @@ private extension PlanDetailsView {
         }
     }
 
-    func phoneRestrictionSection(_ plan: PlanSnapshot) -> some View {
-        detailCard(title: "PHONE RESTRICTION") {
+    func screenTimeSection(_ plan: PlanSnapshot) -> some View {
+        detailCard(title: "SCREEN TIME") {
             VStack(alignment: .leading, spacing: 12) {
                 detailRow(
-                    icon: "iphone",
+                    icon: "shield.fill",
                     label: "Restriction",
-                    value: plan.phoneRestrictionMode.displayName
+                    value: "iOS Screen Time shielding"
                 )
 
                 if !plan.lightSupports.isEmpty {
@@ -142,7 +142,7 @@ private extension PlanDetailsView {
                     )
                 }
 
-                if plan.phoneRestrictionMode == .screenTime && !screenTimeManager.hasSelectedActivity {
+                if !screenTimeManager.hasSelectedActivity {
                     warningRow(
                         icon: "exclamationmark.triangle.fill",
                         title: "No apps selected",

@@ -11,6 +11,7 @@ import SwiftUI
 struct SettingsView: View {
 
     @Environment(PlanManager.self) var planManager
+    @Environment(ScreenTimeManager.self) var screenTimeManager
 
     @State private var eveningReminderOn: Bool = true
     @State private var weeklyFeedbackOn: Bool = true
@@ -213,31 +214,35 @@ private extension SettingsView {
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Screen Time Integration")
+                        Text("Screen Time Setup")
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(Color.offTextPrimary)
 
                         HStack(spacing: 6) {
                             Circle()
-                                .fill(Color.offWarn)
+                                .fill(screenTimeStatusColor)
                                 .frame(width: 6, height: 6)
 
-                            Text("Not Connected")
+                            Text(screenTimeStatusText)
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color.offWarn)
+                                .foregroundStyle(screenTimeStatusColor)
                         }
                     }
                 }
 
-                Text("Used to track social media usage patterns")
+                Text(screenTimeBodyText)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(Color.offTextSecondary)
                     .lineSpacing(2)
 
-                Button { } label: {
+                Button {
+                    Task {
+                        await screenTimeManager.requestAuthorization()
+                    }
+                } label: {
                     HStack {
                         Spacer()
-                        Text("Grant Permission")
+                        Text(screenTimeButtonTitle)
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(.white)
                         Spacer()
@@ -255,6 +260,8 @@ private extension SettingsView {
                     )
                 }
                 .buttonStyle(.plain)
+                .disabled(screenTimeManager.authorizationStatus == .approved)
+                .opacity(screenTimeManager.authorizationStatus == .approved ? 0.55 : 1)
             }
             .padding(24)
         }
@@ -263,6 +270,31 @@ private extension SettingsView {
                 .stroke(Color.offStroke, lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 4)
+    }
+
+    var screenTimeStatusColor: Color {
+        screenTimeManager.authorizationStatus == .approved ? Color.offAccent : Color.offWarn
+    }
+
+    var screenTimeStatusText: String {
+        if screenTimeManager.authorizationStatus != .approved {
+            return "Permission required"
+        }
+        return screenTimeManager.hasSelectedActivity ? "Ready" : "Apps not selected"
+    }
+
+    var screenTimeBodyText: String {
+        if screenTimeManager.authorizationStatus != .approved {
+            return "Screen Time permission is required for Off to block apps and show usage."
+        }
+        if !screenTimeManager.hasSelectedActivity {
+            return "Choose the apps Off should shield and track to finish setup."
+        }
+        return "Screen Time access and app selection are configured."
+    }
+
+    var screenTimeButtonTitle: String {
+        screenTimeManager.authorizationStatus == .approved ? "Connected" : "Grant Permission"
     }
 
     var notificationsCard: some View {

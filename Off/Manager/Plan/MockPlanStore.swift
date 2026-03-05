@@ -25,7 +25,6 @@ final class MockPlanStore: PlanStore {
                 timeBoundary: .always,
                 timeWindows: [],
                 days: .weekdays,
-                phoneRestrictionMode: .deleteApps,
                 lightSupports: []
             ),
             PlanSnapshot(
@@ -35,13 +34,10 @@ final class MockPlanStore: PlanStore {
                 timeBoundary: .duringWindows,
                 timeWindows: [PlanTimeWindowRules.defaultWindow],
                 days: .everyday,
-                phoneRestrictionMode: .screenTime,
-                lightSupports: [.notificationsOff, .removeFromHomeScreen]
+                lightSupports: [.notificationsOff, .removeFromHomeScreen, .logOut]
             )
         ]
     }
 
     func save(_ snapshot: PlanSnapshot) throws { }
-
-    func deleteAllPlans() throws { }
 }
