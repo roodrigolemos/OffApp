@@ -10,14 +10,9 @@ import FamilyControls
 final class MockScreenTimeStore: ScreenTimeStore {
 
     private var selection: FamilyActivitySelection
-    private var planConfig: ScreenTimeShieldingPlanConfig?
 
-    init(
-        selection: FamilyActivitySelection = FamilyActivitySelection(),
-        planConfig: ScreenTimeShieldingPlanConfig? = nil
-    ) {
+    init(selection: FamilyActivitySelection = FamilyActivitySelection()) {
         self.selection = selection
-        self.planConfig = planConfig
     }
 
     func loadSelection() throws -> FamilyActivitySelection {
@@ -26,13 +21,5 @@ final class MockScreenTimeStore: ScreenTimeStore {
 
     func saveSelection(_ selection: FamilyActivitySelection) throws {
         self.selection = selection
-    }
-
-    func loadPlanConfig() throws -> ScreenTimeShieldingPlanConfig? {
-        planConfig
-    }
-
-    func savePlanConfig(_ config: ScreenTimeShieldingPlanConfig?) throws {
-        planConfig = config
     }
 }

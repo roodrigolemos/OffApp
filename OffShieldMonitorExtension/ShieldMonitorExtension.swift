@@ -8,15 +8,6 @@ import DeviceActivity
 import FamilyControls
 import ManagedSettings
 
-private struct ScreenTimeShieldingPlanConfig: Codable {
-    var timeBoundaryRaw: String
-    var daysRaw: Int
-    var startHour: Int?
-    var startMinute: Int?
-    var endHour: Int?
-    var endMinute: Int?
-}
-
 private final class ShieldMonitorSharedStore {
 
     private let defaults: UserDefaults = UserDefaults(suiteName: ScreenTimeSharedConstants.appGroupIdentifier) ?? .standard
@@ -27,11 +18,6 @@ private final class ShieldMonitorSharedStore {
         }
         return try PropertyListDecoder().decode(FamilyActivitySelection.self, from: data)
     }
-
-    func loadPlanConfig() throws -> ScreenTimeShieldingPlanConfig? {
-        guard let data = defaults.data(forKey: ScreenTimeSharedConstants.planConfigKey) else { return nil }
-        return try PropertyListDecoder().decode(ScreenTimeShieldingPlanConfig.self, from: data)
-    }
 }
 
 final class ShieldMonitorExtension: DeviceActivityMonitor {
@@ -41,7 +27,7 @@ final class ShieldMonitorExtension: DeviceActivityMonitor {
 
     override func intervalDidStart(for activity: DeviceActivityName) {
         super.intervalDidStart(for: activity)
-        applyShieldingIfNeeded(now: .now)
+        applyShieldingIfNeeded()
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
@@ -52,15 +38,10 @@ final class ShieldMonitorExtension: DeviceActivityMonitor {
 
 private extension ShieldMonitorExtension {
 
-    func applyShieldingIfNeeded(now: Date) {
+    func applyShieldingIfNeeded() {
         do {
-            guard let config = try sharedStore.loadPlanConfig() else {
-                clearShielding()
-                return
-            }
-
             let selection = try sharedStore.loadSelection()
-            guard hasAnySelection(selection), shouldShieldNow(config: config, now: now) else {
+            guard hasAnySelection(selection) else {
                 clearShielding()
                 return
             }
@@ -71,41 +52,6 @@ private extension ShieldMonitorExtension {
         } catch {
             clearShielding()
         }
-    }
-
-    func shouldShieldNow(config: ScreenTimeShieldingPlanConfig, now: Date) -> Bool {
-        guard isSelectedDay(config: config, date: now) else { return false }
-
-        switch config.timeBoundaryRaw {
-        case "always":
-            return true
-        case "duringWindows":
-            guard
-                let sh = config.startHour,
-                let sm = config.startMinute,
-                let eh = config.endHour,
-                let em = config.endMinute
-            else {
-                return false
-            }
-            let current = currentMinutes(in: now)
-            let start = (sh * 60) + sm
-            let end = (eh * 60) + em
-            return current >= start && current < end
-        default:
-            return false
-        }
-    }
-
-    func isSelectedDay(config: ScreenTimeShieldingPlanConfig, date: Date) -> Bool {
-        let weekday = Calendar.current.component(.weekday, from: date)
-        let bit = 1 << (weekday - 1)
-        return (config.daysRaw & bit) != 0
-    }
-
-    func currentMinutes(in date: Date) -> Int {
-        let components = Calendar.current.dateComponents([.hour, .minute], from: date)
-        return ((components.hour ?? 0) * 60) + (components.minute ?? 0)
     }
 
     func hasAnySelection(_ selection: FamilyActivitySelection) -> Bool {

@@ -123,9 +123,6 @@ final class ScreenTimeManager {
 
     func syncShielding(activePlan: PlanSnapshot?) {
         do {
-            let config = makeConfig(from: activePlan)
-            try store.savePlanConfig(config)
-
             guard let activePlan else {
                 disableAllShielding()
                 return
@@ -177,19 +174,6 @@ final class ScreenTimeManager {
 }
 
 private extension ScreenTimeManager {
-
-    func makeConfig(from plan: PlanSnapshot?) -> ScreenTimeShieldingPlanConfig? {
-        guard let plan else { return nil }
-        let window = plan.timeWindows.first
-        return ScreenTimeShieldingPlanConfig(
-            timeBoundaryRaw: plan.timeBoundary.rawValue,
-            daysRaw: plan.days.rawValue,
-            startHour: window?.startHour,
-            startMinute: window?.startMinute,
-            endHour: window?.endHour,
-            endMinute: window?.endMinute
-        )
-    }
 
     func startMonitoring(for plan: PlanSnapshot) throws {
         for day in MonitorWeekday.allCases where plan.days.contains(day.dayFlag) {

@@ -9,7 +9,6 @@ import ManagedSettings
 enum ScreenTimeSharedConstants {
     static let appGroupIdentifier = "group.rlemosapp.Off"
     static let selectionKey = "screenTimeActivitySelection"
-    static let planConfigKey = "screenTimeShieldingPlanConfig"
 }
 
 extension ManagedSettingsStore.Name {
